@@ -33,6 +33,7 @@ const DEFAULTS = {
   },
   workouts: [], log: [], bw: [], meals: [], custom: [], meas: [], myprogs: [],
   budget: { amount: 60000, period: 'day', prices: {}, off: ['whey', 'salmon', 'tuna', 'pbutter'] },
+  cut: { on: false, sex: 'm', age: 0, height: 0, activity: 1.55, startKg: 0, targetKg: 0, weeks: 12, realWeeks: 12, since: '' },
   goal: { kcal: 2500, p: 150, c: 300, f: 70 },
   xp: 0, ach: {}, water: {}, active: null,
 };
@@ -160,7 +161,7 @@ function sanitizeData(d) {
     arr('custom', e => isObj(e) && isStr(e.id) && isStr(e.name) && isStr(e.group));
     arr('meas', m => isObj(m) && isDate(m.date));
     arr('myprogs', p => isObj(p) && isStr(p.id) && isStr(p.name) && Array.isArray(p.days) && p.days.every(dd => isObj(dd) && Array.isArray(dd.ex)));
-    ['profile', 'goal', 'ach', 'water', 'budget'].forEach(k => { if (d[k] !== undefined) { if (!isObj(d[k])) throw new Error(k); out[k] = d[k]; } });
+    ['profile', 'goal', 'ach', 'water', 'budget', 'cut'].forEach(k => { if (d[k] !== undefined) { if (!isObj(d[k])) throw new Error(k); out[k] = d[k]; } });
     if (d.xp !== undefined) { if (!isNum(d.xp) || d.xp < 0) throw new Error('xp'); out.xp = d.xp; }
     if (d.active !== undefined) out.active = (d.active === null || (isObj(d.active) && Array.isArray(d.active.exs))) ? d.active : null;
     if (out.goal && !['kcal', 'p', 'c', 'f'].every(k => isNum(out.goal[k]))) delete out.goal;
@@ -266,6 +267,7 @@ function renderHome() {
 
   $('#tab-home').innerHTML = `
     <div class="greet"><small>${greet}</small><h2>${esc(S.profile.name || 'Chempion')}</h2></div>
+    ${window.Cut ? Cut.homeCard() : ''}
 
     <section class="hero today">
       <div class="hero-meta">${esc(P.name)}, ${idx + 1}-kun (${P.days.length} tadan)</div>
@@ -586,6 +588,7 @@ function renderDiet() {
   const planTot = sumM(plan.map(m => m.t));
 
   $('#tab-diet').innerHTML = `
+    ${window.Cut ? Cut.dietCard() : ''}
     <div class="card fade"><div class="dsum">${ring(g.kcal ? tot.k / g.kcal : 0, Math.round(tot.k), `/ ${g.kcal} kkal`, 'var(--ok)')}
       <div class="grow">${bar('Oqsil', tot.p, g.p, 'g')}${bar('Uglevod', tot.c, g.c, 'g')}${bar('Yog\'', tot.f, g.f, 'g')}</div></div>
       <div class="water"><span>Suv</span><div class="glasses">${Array.from({ length: WATER_GOAL }, (_, i) => `<button class="${i < water ? 'on' : ''}" data-act="water-set" data-n="${i + 1}" aria-label="${i + 1}-stakan"></button>`).join('')}</div><small>${water * 250} ml</small></div></div>
@@ -810,6 +813,7 @@ function renderProg() {
   const gmax = Math.max(1, ...Object.values(gc));
 
   $('#tab-prog').innerHTML = `
+    ${window.Cut ? Cut.progCard() : ''}
     <div class="stats4 fade"><div><b>${S.workouts.length}</b><small>Mashg'ulot</small></div><div><b>${st.streak}</b><small>Seriya</small></div>
       <div><b>${(st.volume / 1000).toFixed(1)}t</b><small>Hajm</small></div><div><b>${st.prCount}</b><small>Rekord</small></div></div>
     <div class="card"><h3>Tana vazni ${bwDelta !== null ? `<span class="delta ${bwDelta > 0 ? 'up' : 'down'}">${bwDelta > 0 ? '+' : ''}${bwDelta} kg</span>` : ''}</h3>
@@ -1227,7 +1231,7 @@ document.addEventListener('submit', e => {
     save('custom'); renderLib(); toast('Mashq qo\'shildi', '➕');
   } else if (id === 'bwForm') {
     S.bw = S.bw.filter(b => b.date !== today()); S.bw.push({ date: today(), kg: parseFloat(f.get('kg')) });
-    save('bw'); addXp(10); checkAch(); renderProg(); toast('Vazn saqlandi', '⚖️');
+    save('bw'); addXp(10); checkAch(); renderAll(); toast('Vazn saqlandi', '⚖️');
   } else if (id === 'measForm') {
     const entry = { date: today() };
     MEAS.forEach(([k]) => { const v = parseFloat(f.get(k)); if (v > 0) entry[k] = v; });

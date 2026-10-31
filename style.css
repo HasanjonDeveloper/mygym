@@ -352,3 +352,21 @@ optgroup{font-style:normal}
 .exrow .thumb.ph{display:grid;place-items:center;background:var(--s2)}
 .exrow b{display:block;font-size:15px}.exrow small{color:var(--mute);font-size:13px}
 .exrow .chev{color:var(--mute);font-size:22px}
+
+/* Ozish rejimi */
+.cutcta{display:flex;align-items:center;gap:12px;justify-content:space-between;background:var(--s1);border:1px dashed var(--line);border-radius:18px;padding:14px 16px;margin-bottom:14px}
+.cutcta b{display:block;font-size:16px}.cutcta .btn{flex:none}
+.cutcard{background:linear-gradient(160deg,var(--s2),var(--s1));border:1px solid var(--line);border-radius:22px;padding:18px;margin-bottom:14px;display:flex;flex-direction:column;gap:12px}
+.cut-top{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.cut-kg{display:flex;align-items:baseline;gap:6px}.cut-kg b{font-family:'Big Shoulders Display',sans-serif;font-size:56px;line-height:.9;letter-spacing:.5px}.cut-kg span{color:var(--mute);font-size:16px}
+.cut-left{text-align:right}.cut-left b{display:block;font-family:'Big Shoulders Display',sans-serif;font-size:30px;line-height:1;color:var(--ok)}
+.cut-bar{height:10px;background:var(--s1);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.cut-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--ok));border-radius:6px;transition:width .5s}
+.cut-meta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mute)}
+.cut-msg{margin:0;font-size:14px;line-height:1.45}
+.tone-warn .cut-msg{color:#e8b64a}.tone-bad .cut-msg{color:#ff7a7a}
+.cut-day{display:flex;gap:10px}.cut-day>div{flex:1;background:var(--s1);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.cut-day b{display:block;font-family:'Big Shoulders Display',sans-serif;font-size:26px;line-height:1}
+.cut-day.over>div:first-child b{color:#ff7a7a}
+.cutcard .btn.sm,.cutcard .block.sm{padding:10px}
+.cutdiet h3{margin-top:0}.cutsum{margin-bottom:6px}
