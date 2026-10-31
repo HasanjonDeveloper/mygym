@@ -723,6 +723,7 @@ function settingsSheet() {
     <label>Vaqt<input type="time" name="remindTime" value="${esc(S.profile.remindTime)}"></label>
     <div class="daypick">${WEEKDAYS.map((d, i) => `<label class="dp"><input type="checkbox" name="rd" value="${(i + 1) % 7}" ${S.profile.remindDays.includes((i + 1) % 7) ? 'checked' : ''}><span>${d}</span></label>`).join('')}</div>
     <p class="mute small">Eslatma ilova ochiq yoki fonda ishlab turganda chiqadi. Yopiq ilovaga haqiqiy push yuborish alohida server (FCM) talab qiladi. Dam olish taymeri tugaganda ham bildirishnoma keladi.</p>
+    <p class="small" id="notifHelp">${esc(notifHelp(notifState()))}</p>
     <button type="button" class="btn ghost" data-act="notif-test">Bildirishnomani sinash</button>
     <button class="btn">Saqlash</button></form>
     ${window.Sync ? Sync.html() : ''}
@@ -733,18 +734,31 @@ function settingsSheet() {
 }
 
 // ====================== bildirishnomalar ======================
+// Holat: 'granted' | 'denied' | 'default' | 'unsupported'
+function notifState() {
+  if (!('Notification' in window)) return 'unsupported';
+  return Notification.permission;
+}
 async function askNotifPermission() {
   try {
-    if (!('Notification' in window)) return false;
-    if (Notification.permission === 'default') await Notification.requestPermission();
-    return Notification.permission === 'granted';
-  } catch { return false; }
+    if (notifState() === 'default') await Notification.requestPermission();
+  } catch { /* eski brauzerlar */ }
+  return notifState() === 'granted';
+}
+function notifHelp(st) {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  if (st === 'unsupported') return ios
+    ? 'iPhone/iPad da bildirishnoma faqat ilova bosh ekranga o\'rnatilganda ishlaydi: Safari → Ulashish → "Bosh ekranga qo\'shish", keyin o\'sha ikonadan oching.'
+    : 'Bu brauzer bildirishnomani qo\'llamaydi.';
+  if (st === 'denied') return 'Bildirishnoma bloklangan. Brauzer sozlamalarida shu sayt uchun "Bildirishnomalar" ni "Ruxsat" qiling (manzil satridagi 🔒 → Sayt sozlamalari), so\'ng qayta urinib ko\'ring.';
+  if (st === 'default') return 'Ruxsat hali berilmagan. "Bildirishnomani sinash" ni bosing va ruxsat bering.';
+  return 'Ruxsat berilgan ✓';
 }
 async function notify(title, body) {
   try {
     if ('Notification' in window && Notification.permission === 'granted') {
       const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
-      if (reg) reg.showNotification(title, { body, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'gymtrack', vibrate: [200, 100, 200] });
+      if (reg) await reg.showNotification(title, { body, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'gymtrack-' + Date.now(), vibrate: [200, 100, 200] });
       else new Notification(title, { body, icon: 'icon-192.png' });
       return true;
     }
@@ -949,7 +963,12 @@ const ACTIONS = {
     const last = [...S.meas].sort((a, b) => a.date.localeCompare(b.date)).at(-1);
     S.meas = S.meas.filter(m => m !== last); save('meas'); renderProg();
   },
-  'notif-test': async () => { await askNotifPermission(); notify('GymTrack', 'Eslatmalar ishlayapti 💪'); },
+  'notif-test': async () => {
+    const ok = await askNotifPermission();
+    if (!ok) { const st = notifState(); toast(notifHelp(st), '⚠️'); const h = $('#notifHelp'); if (h) h.textContent = notifHelp(st); return; }
+    const shown = await notify('GymTrack', 'Eslatmalar ishlayapti 💪');
+    const h = $('#notifHelp'); if (h) h.textContent = shown ? 'Ruxsat berilgan ✓ — bildirishnoma yuborildi (ko\'rinmasa, telefon "Bezovta qilmang" rejimini tekshiring).' : 'Ruxsat bor, lekin bildirishnoma chiqmadi.';
+  },
   'sync-login': () => window.Sync && Sync.login(),
   'sync-now': () => window.Sync && Sync.syncNow(false),
   'sync-logout': () => window.Sync && Sync.logout(),
