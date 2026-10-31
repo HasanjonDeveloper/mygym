@@ -67,7 +67,8 @@ const Voice = (() => {
   });
   wrap('wk-finish', r => Promise.resolve(r).then(() => { if (!S.active) say('finish'); }));
   Object.assign(ACTIONS, {
-    'voice-toggle': () => { S.profile.voice = !S.profile.voice; save('profile'); renderWk(); if (S.profile.voice) say('test'); else if (syn) syn.cancel(); },
+    'voice-toggle': () => {
+      if (!syn) { toast('Bu muhitda (Telegram ichida) ovoz ishlamaydi. Saytni Chrome\'da oching.', '🔇'); return; } S.profile.voice = !S.profile.voice; save('profile'); renderWk(); if (S.profile.voice) say('test'); else if (syn) syn.cancel(); },
     'voice-test': () => { const was = S.profile.voice; S.profile.voice = true; say('test'); S.profile.voice = was; },
   });
   document.addEventListener('change', e => {

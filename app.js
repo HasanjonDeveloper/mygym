@@ -362,7 +362,7 @@ function renderWk() {
   el.innerHTML = `
     <div class="wk-head"><button class="ico" data-act="wk-min" aria-label="Kichraytirish">⌄</button>
       <div class="grow"><b>${esc(a.name)}</b><small><span id="wkTime"></span> · <span id="wkCount">${done}/${total} set</span></small></div>
-      ${window.Voice && Voice.supported ? `<button class="ico ${S.profile.voice ? 'on' : ''}" data-act="voice-toggle" aria-label="Ovozli yordamchi" aria-pressed="${!!S.profile.voice}">${S.profile.voice ? '🔊' : '🔈'}</button>` : ''}
+      ${window.Voice ? `<button class="ico ${Voice.on() ? 'on' : ''}" data-act="voice-toggle" aria-label="Ovozli yordamchi" aria-pressed="${Voice.on()}">${Voice.on() ? '🔊' : '🔈'}</button>` : ''}
       <button class="btn sm" data-act="wk-finish">Tugatish</button></div>
     <div class="bar thin"><div id="wkBar" style="width:${total ? (done / total) * 100 : 0}%"></div></div>
     <div id="wkScroll" class="wk-scroll">
@@ -843,6 +843,7 @@ function settingsSheet() {
     <label>Ismingiz<input name="name" value="${esc(S.profile.name)}" maxlength="30" placeholder="Ism"></label>
     <label>Haftalik maqsad (mashg'ulot kunlari)<select name="goal">${[2, 3, 4, 5, 6].map(n => `<option ${n === S.profile.weeklyGoal ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
     <label>Mavzu<select name="theme">${[['dark', 'Qorong\'i'], ['light', 'Yorug\''], ['auto', 'Qurilmaga mos']].map(([v, n]) => `<option value="${v}" ${S.profile.theme === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+    ${window.Voice && !Voice.supported ? `<h4>Ovozli yordamchi</h4><p class="mute small">Bu muhitda (masalan, Telegram ichida) ovozli yordamchi ishlamaydi. Uni Chrome brauzerida oching: saytni brauzerda ochib, Sozlamalardan yoqing.</p>` : ''}
     ${window.Voice && Voice.supported ? `<h4>Ovozli yordamchi</h4>
     <label class="check"><input type="checkbox" data-voice-on ${S.profile.voice ? 'checked' : ''}> Mashg'ulotda ovoz bilan aytib turish</label>
     <label>Til<select data-voice-lang>${[['auto', 'Avto (o\'zbek, bo\'lmasa rus yoki ingliz)'], ['uz', 'O\'zbekcha'], ['ru', 'Ruscha'], ['en', 'Inglizcha']].map(([v, n]) => `<option value="${v}" ${(S.profile.voiceLang || 'auto') === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
