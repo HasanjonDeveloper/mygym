@@ -30,6 +30,14 @@ exports.handler = async (ev) => {
   if (!token || !sa || !sa.private_key) return json(500, { error: 'Server sozlanmagan (BOT_TOKEN / FIREBASE_SERVICE_ACCOUNT)' });
   let b; try { b = JSON.parse(ev.body || '{}'); } catch { return json(400, { error: 'json' }); }
   try {
+    // Mini App: sinov xabari
+    if (b.action === 'test') {
+      const u = checkInitData(String(b.initData || ''), token);
+      if (!u || !u.id) return json(401, { error: 'Telegram imzosi noto\'g\'ri' });
+      const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ chat_id: u.id, text: 'Sinov xabari ✅ Mashg\'ulot eslatmalari shu chatga keladi. Baland eshitilishi uchun: chat → bot nomi → Bildirishnomalar → Sozlash (ovoz va ustuvorlik).' }) });
+      return r.ok ? json(200, { ok: true }) : json(502, { error: 'Telegram ' + r.status });
+    }
     // Brauzer: bot yuborgan 6 xonali kodni tekshiradi
     if (b.action === 'verify') {
       if (!SID.test(b.sid || '') || !/^\d{6}$/.test(String(b.code || ''))) return json(400, { error: 'Kod 6 ta raqamdan iborat bo\'lishi kerak' });

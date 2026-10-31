@@ -824,6 +824,7 @@ function settingsSheet() {
     <label>Vaqt<input type="time" name="remindTime" value="${esc(S.profile.remindTime)}"></label>
     <div class="daypick">${WEEKDAYS.map((d, i) => `<label class="dp"><input type="checkbox" name="rd" value="${(i + 1) % 7}" ${S.profile.remindDays.includes((i + 1) % 7) ? 'checked' : ''}><span>${d}</span></label>`).join('')}</div>
     <p class="mute small">Ovozsiz rejimda oddiy bildirishnoma jim bo'ladi. Eng ishonchli yo'l: telefon budilnigi (pastdagi tugma). Telegram orqali kirgan bo'lsangiz, bot ham shu vaqtda xabar yuboradi (ilova yopiq bo'lsa ham). Dam olish taymeri tugaganda baland signal va uzoq tebranish ishlaydi.</p>
+    ${window.IN_TG ? '<button type="button" class="btn ghost" data-act="open-browser">⏰ Budilnik uchun brauzerda ochish</button><p class="mute small">Budilnik tugmasi faqat oddiy brauzerda (Chrome) ishlaydi. Shu tugma saytni brauzerda ochadi.</p>' : ''}
     ${/Android/i.test(navigator.userAgent) && !window.IN_TG ? '<button type="button" class="btn ghost" data-act="alarm-set">⏰ Telefon budilnigini o\'rnatish</button><p class="mute small">Budilnik ilovasi ochiladi, vaqt tayyor turadi. Takrorlanish kunlarini budilnikda belgilab, saqlang. Budilnik ovozsiz rejimda ham jiringlaydi.</p>' : ''}
     <p class="small" id="notifHelp">${esc(notifHelp(notifState()))}</p>
     <button type="button" class="btn ghost" data-act="notif-test">Bildirishnomani sinash</button>
@@ -848,7 +849,7 @@ async function askNotifPermission() {
   return notifState() === 'granted';
 }
 function notifHelp(st) {
-  if (window.IN_TG) return 'Telegram ichida brauzer bildirishnomalari ishlamaydi. Eslatmalarni bot yuborishi mumkin (alohida bosqichda ulanadi).';
+  if (window.IN_TG) return 'Telegram ichida brauzer bildirishnomalari ishlamaydi. Eslatmani bot Telegram orqali yuboradi: "Bildirishnomani sinash" bot orqali sinov xabarini jo\'natadi.';
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
   if (st === 'unsupported') return ios
     ? 'iPhone/iPad da bildirishnoma faqat ilova bosh ekranga o\'rnatilganda ishlaydi: Safari → Ulashish → "Bosh ekranga qo\'shish", keyin o\'sha ikonadan oching.'
@@ -1084,12 +1085,20 @@ const ACTIONS = {
     S.meas = S.meas.filter(m => m !== last); save('meas'); renderProg();
   },
   'notif-test': async () => {
+    if (window.IN_TG) {
+      try {
+        const r = await fetch('/.netlify/functions/tg-auth', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'test', initData: Telegram.WebApp.initData }) });
+        toast(r.ok ? 'Bot xabar yubordi. Telegram chatini tekshiring' : 'Yuborilmadi (bot sozlamasini tekshiring)', r.ok ? '🔔' : '⚠️');
+      } catch { toast('Tarmoq xatosi', '⚠️'); }
+      return;
+    }
     const ok = await askNotifPermission();
     if (!ok) { const st = notifState(); toast(notifHelp(st), '⚠️'); const h = $('#notifHelp'); if (h) h.textContent = notifHelp(st); return; }
     const shown = await notify('GymTrack', 'Eslatmalar ishlayapti 💪');
     const h = $('#notifHelp'); if (h) h.textContent = shown ? 'Ruxsat berilgan ✓ — bildirishnoma yuborildi (ko\'rinmasa, telefon "Bezovta qilmang" rejimini tekshiring).' : 'Ruxsat bor, lekin bildirishnoma chiqmadi.';
   },
   'sync-login': () => window.Sync && Sync.login(),
+  'open-browser': () => { try { Telegram.WebApp.openLink(location.origin + '/'); } catch { window.open(location.origin + '/', '_blank'); } },
   'alarm-set': () => {
     const v = (document.querySelector('#setForm [name=remindTime]') || {}).value || S.profile.remindTime || '18:00';
     const [h, m] = v.split(':').map(Number);
