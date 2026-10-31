@@ -9,7 +9,12 @@ const Sync = (() => {
   const KEYS_SYNC = () => Object.keys(DEFAULTS).filter(k => k !== 'active');
   let user = null, db = null, auth = null, ready = false, busy = false, timer = null, status = '', err = '';
 
-  const cfg = () => store.get('fbcfg', null);
+  // Ochiq web-konfiguratsiya (maxfiy emas); xavfsizlik Firestore qoidalari bilan ta'minlanadi
+  const DEFAULT_CFG = {
+    apiKey: 'AIzaSyCM6n6zd8fg4EkBH73Q7zbWqE4vQ6tBQ2A', authDomain: 'gymtrack-e4a28.firebaseapp.com', projectId: 'gymtrack-e4a28',
+    storageBucket: 'gymtrack-e4a28.firebasestorage.app', messagingSenderId: '155397610247', appId: '1:155397610247:web:6e9fe766dc897fdadb83a2',
+  };
+  const cfg = () => store.get('fbcfg', null) || DEFAULT_CFG;
 
   // JSON yoki Firebase konsolidagi JS ob'ekt ko'rinishini qabul qiladi (eval ishlatilmaydi)
   function parseCfg(txt) {
@@ -135,11 +140,11 @@ const Sync = (() => {
     }
     if (!user) {
       return `<h4>☁️ Bulutli sinxronlash</h4><p class="mute small">Loyiha: <b>${esc(c.projectId)}</b></p>${e}
-        <div class="row wrap"><button class="btn" data-act="sync-login">Google bilan kirish</button><button class="btn ghost danger" data-act="sync-clear">Sozlamani o'chirish</button></div>`;
+        <div class="row wrap"><button class="btn" data-act="sync-login">Google bilan kirish</button></div>`;
     }
     return `<h4>☁️ Bulutli sinxronlash</h4>
       <p class="small">Kirgan: <b>${esc(user.email || user.displayName || '')}</b></p><p class="mute small">${esc(status || 'Tayyor')}</p>${e}
-      <div class="row wrap"><button class="btn" data-act="sync-now">Hozir sinxronlash</button><button class="btn ghost" data-act="sync-logout">Chiqish</button><button class="btn ghost danger" data-act="sync-clear">Sozlamani o'chirish</button></div>`;
+      <div class="row wrap"><button class="btn" data-act="sync-now">Hozir sinxronlash</button><button class="btn ghost" data-act="sync-logout">Chiqish</button></div>`;
   }
 
   window.addEventListener('online', () => { if (user) syncNow(true); else init(); });
