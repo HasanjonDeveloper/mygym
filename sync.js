@@ -71,7 +71,7 @@ const Sync = (() => {
     if (!auth || !d) return;
     try { await tgExchange({ initData: d }); } catch (e) { setStatus('', friendly(e)); }
   }
-  // ---- Brauzerdan Telegram orqali kirish: bot ichida tasdiqlanadi (BotFather domeni kerak emas) ----
+  // ---- Brauzerdan Telegram orqali kirish: bot 6 xonali kod yuboradi, kodni shu yerga kiritasiz ----
   const FN = '/.netlify/functions/tg-auth';
   let info = null, pend = null, link = '';
   async function loadInfo() { if (!info) { try { info = await (await fetch(FN)).json(); } catch { info = {}; } } return info; }
@@ -79,21 +79,25 @@ const Sync = (() => {
   async function tgWebLogin() {
     if (!ready) await init(); if (!auth) return;
     const i = await loadInfo(); if (!i.bot) { setStatus('', 'Bot sozlanmagan (BOT_USERNAME)'); return; }
-    const sid = [...crypto.getRandomValues(new Uint8Array(16))].map(x => x.toString(16).padStart(2, '0')).join('');
-    link = `https://t.me/${i.bot}${i.app ? '/' + i.app : ''}?startapp=${sid}`;
-    pend = sid; setStatus('Telegramda ochilgan oynada tasdiqlang…'); window.open(link, '_blank');
-    for (let n = 0; n < 150 && pend === sid && !user; n++) {
-      await new Promise(r => setTimeout(r, 2000)); if (pend !== sid) return;
-      try {
-        const r = await fetch(FN, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'poll', sid }) });
-        const j = await r.json();
-        if (j.token) { pend = null; store.set('tgname', j.name || ''); await auth.signInWithCustomToken(j.token); return; }
-        if (!r.ok) { pend = null; setStatus('', j.error || 'Xato'); return; }
-      } catch { /* tarmoq: yana urinamiz */ }
-    }
-    if (pend === sid) { pend = null; setStatus('', 'Vaqt tugadi. Qayta urinib ko\'ring.'); }
+    pend = [...crypto.getRandomValues(new Uint8Array(16))].map(x => x.toString(16).padStart(2, '0')).join('');
+    link = `https://t.me/${i.bot}?start=${pend}`;
+    setStatus(''); window.open(link, '_blank');
+  }
+  async function tgVerify(code) {
+    if (!pend) return;
+    setStatus('Tekshirilmoqda…');
+    try {
+      const r = await fetch(FN, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'verify', sid: pend, code }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.token) { if (r.status === 401 && /Qaytadan|eskirgan|topilmadi/.test(j.error || '')) pend = null; setStatus('', j.error || 'Xato'); return; }
+      pend = null; store.set('tgname', j.name || ''); await auth.signInWithCustomToken(j.token);
+    } catch (e) { setStatus('', friendly(e)); }
   }
   function tgCancel() { pend = null; setStatus(''); }
+  document.addEventListener('submit', e => {
+    if (e.target.id !== 'tgCodeForm') return; e.preventDefault();
+    tgVerify(String(new FormData(e.target).get('code') || '').trim());
+  });
 
   async function login() {
     if (!ready) await init();
@@ -178,7 +182,7 @@ const Sync = (() => {
     }
     if (!user) {
       return `<h4>Bulutli sinxronlash</h4><p class="mute small">Loyiha: <b>${esc(c.projectId)}</b></p>${e}
-        <div class="row wrap"><button class="btn" data-act="sync-login">Google bilan kirish</button><button class="btn ghost" data-act="tg-web">Telegram orqali kirish</button></div>${pend ? `<p class="mute small">Telegram ochilmadimi? <a href="${esc(link)}" target="_blank" rel="noopener">Shu havolani oching</a> · <a href="#" data-act="tg-cancel">Bekor qilish</a></p>` : ''}`;
+        <div class="row wrap"><button class="btn" data-act="sync-login">Google bilan kirish</button><button class="btn ghost" data-act="tg-web">Telegram orqali kirish</button></div>${pend ? `<form id="tgCodeForm" class="stack" style="margin-top:12px"><p class="small">Botga o'ting, <b>Start</b> ni bosing va u yuborgan 6 xonali kodni kiriting.</p><input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="123456" aria-label="Kirish kodi" required><div class="row wrap"><button class="btn">Tasdiqlash</button><button type="button" class="btn ghost" data-act="tg-cancel">Bekor qilish</button></div><p class="mute small">Telegram ochilmadimi? <a href="${esc(link)}" target="_blank" rel="noopener">Botni ochish</a></p></form>` : ''}`;
     }
     return `<h4>Bulutli sinxronlash</h4>
       <p class="small">Kirgan: <b>${esc(user.email || user.displayName || store.get('tgname', '') || 'Telegram')}</b></p><p class="mute small">${esc(status || 'Tayyor')}</p>${e}
