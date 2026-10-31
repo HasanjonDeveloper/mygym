@@ -825,7 +825,7 @@ function settingsSheet() {
     <div class="daypick">${WEEKDAYS.map((d, i) => `<label class="dp"><input type="checkbox" name="rd" value="${(i + 1) % 7}" ${S.profile.remindDays.includes((i + 1) % 7) ? 'checked' : ''}><span>${d}</span></label>`).join('')}</div>
     <p class="mute small">Ovozsiz rejimda oddiy bildirishnoma jim bo'ladi. Eng ishonchli yo'l: telefon budilnigi (pastdagi tugma). Telegram orqali kirgan bo'lsangiz, bot ham shu vaqtda xabar yuboradi (ilova yopiq bo'lsa ham). Dam olish taymeri tugaganda baland signal va uzoq tebranish ishlaydi.</p>
     ${window.IN_TG ? '<button type="button" class="btn ghost" data-act="open-browser">⏰ Budilnik uchun brauzerda ochish</button><p class="mute small">Budilnik tugmasi faqat oddiy brauzerda (Chrome) ishlaydi. Shu tugma saytni brauzerda ochadi.</p>' : ''}
-    ${/Android/i.test(navigator.userAgent) && !window.IN_TG ? '<button type="button" class="btn ghost" data-act="alarm-set">⏰ Telefon budilnigini o\'rnatish</button><p class="mute small">Budilnik ilovasi ochiladi, vaqt tayyor turadi. Takrorlanish kunlarini budilnikda belgilab, saqlang. Budilnik ovozsiz rejimda ham jiringlaydi.</p>' : ''}
+    ${/Android/i.test(navigator.userAgent) && !window.IN_TG ? '<button type="button" class="btn ghost" data-act="alarm-set">⏰ Telefon budilnigini o\'rnatish</button><p class="mute small">Budilnik ilovasi ochiladi, vaqt tayyor turadi. Takrorlanish kunlarini budilnikda belgilab, saqlang. Budilnik ovozsiz rejimda ham jiringlaydi.</p><p class="small" id="alarmHint"></p>' : ''}
     <p class="small" id="notifHelp">${esc(notifHelp(notifState()))}</p>
     <button type="button" class="btn ghost" data-act="notif-test">Bildirishnomani sinash</button>
     <button class="btn">Saqlash</button></form>
@@ -1102,7 +1102,10 @@ const ACTIONS = {
   'alarm-set': () => {
     const v = (document.querySelector('#setForm [name=remindTime]') || {}).value || S.profile.remindTime || '18:00';
     const [h, m] = v.split(':').map(Number);
-    location.href = `intent:#Intent;action=android.intent.action.SET_ALARM;i.android.intent.extra.alarm.HOUR=${h};i.android.intent.extra.alarm.MINUTES=${m};S.android.intent.extra.alarm.MESSAGE=GymTrack: mashg'ulot vaqti;B.android.intent.extra.alarm.SKIP_UI=false;end`;
+    const msg = encodeURIComponent('GymTrack: mashg\'ulot vaqti');
+    const url = `intent:#Intent;action=android.intent.action.SET_ALARM;i.android.intent.extra.alarm.HOUR=${h};i.android.intent.extra.alarm.MINUTES=${m};S.android.intent.extra.alarm.MESSAGE=${msg};end`;
+    const el = document.createElement('a'); el.href = url; el.style.display = 'none'; document.body.appendChild(el); el.click(); el.remove();
+    const hint = $('#alarmHint'); if (hint) hint.textContent = `Budilnik ochilmasa, qo'lda qo'ying: Soat ilovasi → Budilnik → + → ${v}, kunlar: ${S.profile.remindDays.map(d => WEEKDAYS[(d + 6) % 7]).join(', ')}.`;
   },
   'tg-retry': () => window.Sync && Sync.tgLogin(),
   'tg-web': () => window.Sync && Sync.tgWebLogin(),
