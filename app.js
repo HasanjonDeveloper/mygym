@@ -133,7 +133,7 @@ function toast(msg, icon = '✨') {
 }
 
 let sheetKind = '', pbDay = null;
-function openSheet(html, kind = '') { sheetKind = kind; $('#sheetBody').innerHTML = html; $('#sheet').classList.add('open'); }
+function openSheet(html, kind = '') { sheetKind = kind; $('#sheetBody').innerHTML = html; $('#sheet').classList.add('open'); if (kind === 'settings' && window.Sync) Sync.mount(); }
 function closeSheet() {
   if (pbDay !== null && PB) { progBuilderSheet(); return; }   // mashq tanlashdan chiqilsa, dastur oynasiga qaytamiz
   $('#sheet').classList.remove('open'); sheetKind = '';

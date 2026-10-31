@@ -74,8 +74,9 @@ const Sync = (() => {
   let botName = null;
   async function mountWidget() {
     const box = document.getElementById('tgWidget'); if (!box || window.IN_TG || user) return;
-    if (botName === null) { try { botName = (await (await fetch('/.netlify/functions/tg-auth')).json()).bot || ''; } catch { botName = ''; } }
+    if (!botName) { try { botName = (await (await fetch('/.netlify/functions/tg-auth')).json()).bot || ''; } catch { botName = ''; } }
     if (!botName || !document.getElementById('tgWidget')) return;
+    if (box.childElementCount) return;
     window.__tgAuth = async w => { if (!ready) await init(); try { await tgExchange({ widget: w }); } catch (e) { setStatus('', friendly(e)); } };
     const s = document.createElement('script'); s.async = true; s.src = 'https://telegram.org/js/telegram-widget.js?22';
     s.dataset.telegramLogin = botName; s.dataset.size = 'large'; s.dataset.requestAccess = 'write'; s.dataset.onauth = '__tgAuth(user)';
@@ -175,7 +176,7 @@ const Sync = (() => {
   window.addEventListener('online', () => { if (user) syncNow(true); else init(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && user) syncNow(true); });
 
-  return { init, html, login, tgLogin, logout, syncNow, touch, saveCfg, clearCfg, get user() { return user; } };
+  return { init, html, login, tgLogin, mount: mountWidget, logout, syncNow, touch, saveCfg, clearCfg, get user() { return user; } };
 })();
 
 window.Sync = Sync;
