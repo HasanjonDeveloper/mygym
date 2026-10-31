@@ -38,7 +38,7 @@ const Sync = (() => {
   function setStatus(s, e = '') { status = s; err = e; refresh(); }
 
   async function init() {
-    const c = cfg(); if (!c || ready || !navigator.onLine) return;
+    const c = cfg(); if (!c || ready || !navigator.onLine || window.IN_TG) return;   // Telegram ichida Google kirishi ishlamaydi
     try {
       if (!window.firebase) for (const src of SDK) await loadScript(src);
       if (!firebase.apps.length) firebase.initializeApp(c);
@@ -131,6 +131,7 @@ const Sync = (() => {
   const html = () => `<div id="syncBox">${inner()}</div>`;
   function inner() {
     const c = cfg();
+    if (window.IN_TG) return `<h4>Bulutli sinxronlash</h4><p class="mute small">Telegram ichida Google bilan kirish ishlamaydi (Google buni bloklaydi). Ma'lumotlar Telegram ichida shu qurilmada saqlanadi. Sinxronlash uchun ilovani oddiy brauzerda oching: my-gym-track.netlify.app. Telegram orqali kirish keyingi bosqichda qo'shiladi.</p>`;
     const e = err ? `<p class="warn-t">${esc(err)}</p>` : '';
     if (!c) {
       return `<h4>Bulutli sinxronlash (Firebase)</h4>

@@ -847,6 +847,7 @@ async function askNotifPermission() {
   return notifState() === 'granted';
 }
 function notifHelp(st) {
+  if (window.IN_TG) return 'Telegram ichida brauzer bildirishnomalari ishlamaydi. Eslatmalarni bot yuborishi mumkin (alohida bosqichda ulanadi).';
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
   if (st === 'unsupported') return ios
     ? 'iPhone/iPad da bildirishnoma faqat ilova bosh ekranga o\'rnatilganda ishlaydi: Safari → Ulashish → "Bosh ekranga qo\'shish", keyin o\'sha ikonadan oching.'
