@@ -1083,6 +1083,7 @@ const ACTIONS = {
     const h = $('#notifHelp'); if (h) h.textContent = shown ? 'Ruxsat berilgan ✓ — bildirishnoma yuborildi (ko\'rinmasa, telefon "Bezovta qilmang" rejimini tekshiring).' : 'Ruxsat bor, lekin bildirishnoma chiqmadi.';
   },
   'sync-login': () => window.Sync && Sync.login(),
+  'tg-retry': () => window.Sync && Sync.tgLogin(),
   'sync-now': () => window.Sync && Sync.syncNow(false),
   'sync-logout': () => window.Sync && Sync.logout(),
   'sync-clear': async () => { if (window.Sync && await ask('Firebase sozlamasi o\'chirilsinmi? (Ma\'lumotlar qurilmada qoladi)', 'O\'chirish')) Sync.clearCfg(); },

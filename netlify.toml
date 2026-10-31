@@ -1,6 +1,7 @@
 # GymTrack — Netlify sozlamasi (build kerak emas, statik sayt)
 [build]
   publish = "."
+  functions = "netlify/functions"
 
 # Service worker va manifest har doim yangi bo'lsin
 [[headers]]

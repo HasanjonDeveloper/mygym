@@ -34,17 +34,17 @@ const Sync = (() => {
     });
   }
 
-  function refresh() { const b = document.getElementById('syncBox'); if (b && sheetKind === 'settings') b.innerHTML = inner(); }
+  function refresh() { const b = document.getElementById('syncBox'); if (b && sheetKind === 'settings') { b.innerHTML = inner(); mountWidget(); } }
   function setStatus(s, e = '') { status = s; err = e; refresh(); }
 
   async function init() {
-    const c = cfg(); if (!c || ready || !navigator.onLine || window.IN_TG) return;   // Telegram ichida Google kirishi ishlamaydi
+    const c = cfg(); if (!c || ready || !navigator.onLine) return;
     try {
       if (!window.firebase) for (const src of SDK) await loadScript(src);
       if (!firebase.apps.length) firebase.initializeApp(c);
       auth = firebase.auth(); db = firebase.firestore(); ready = true;
       auth.getRedirectResult().catch(e => setStatus('', friendly(e)));
-      auth.onAuthStateChanged(u => { user = u; refresh(); if (u) syncNow(true); });
+      auth.onAuthStateChanged(u => { user = u; refresh(); if (u) syncNow(true); else if (window.IN_TG) tgLogin(); });
     } catch (e) { setStatus('', 'Firebase ishga tushmadi: ' + (e.message || e)); }
   }
 
@@ -56,6 +56,30 @@ const Sync = (() => {
     if (c === 'permission-denied' || c === 'firestore/permission-denied') return 'Firestore qoidalari ruxsat bermadi (README dagi qoidalarni qo\'ying).';
     if (c === 'auth/network-request-failed') return 'Tarmoq xatosi.';
     return (e && e.message) || String(e);
+  }
+
+  // ---- Telegram orqali kirish (Netlify funksiyasi imzoni tekshirib, Firebase tokenini beradi) ----
+  async function tgExchange(body) {
+    const r = await fetch('/.netlify/functions/tg-auth', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.token) throw new Error(j.error || 'Telegram orqali kirish bajarilmadi');
+    store.set('tgname', j.name || '');
+    await auth.signInWithCustomToken(j.token);
+  }
+  async function tgLogin() {
+    const d = window.Telegram && Telegram.WebApp && Telegram.WebApp.initData;
+    if (!auth || !d) return;
+    try { await tgExchange({ initData: d }); } catch (e) { setStatus('', friendly(e)); }
+  }
+  let botName = null;
+  async function mountWidget() {
+    const box = document.getElementById('tgWidget'); if (!box || window.IN_TG || user) return;
+    if (botName === null) { try { botName = (await (await fetch('/.netlify/functions/tg-auth')).json()).bot || ''; } catch { botName = ''; } }
+    if (!botName || !document.getElementById('tgWidget')) return;
+    window.__tgAuth = async w => { if (!ready) await init(); try { await tgExchange({ widget: w }); } catch (e) { setStatus('', friendly(e)); } };
+    const s = document.createElement('script'); s.async = true; s.src = 'https://telegram.org/js/telegram-widget.js?22';
+    s.dataset.telegramLogin = botName; s.dataset.size = 'large'; s.dataset.requestAccess = 'write'; s.dataset.onauth = '__tgAuth(user)';
+    document.getElementById('tgWidget').appendChild(s);
   }
 
   async function login() {
@@ -131,7 +155,7 @@ const Sync = (() => {
   const html = () => `<div id="syncBox">${inner()}</div>`;
   function inner() {
     const c = cfg();
-    if (window.IN_TG) return `<h4>Bulutli sinxronlash</h4><p class="mute small">Telegram ichida Google bilan kirish ishlamaydi (Google buni bloklaydi). Ma'lumotlar Telegram ichida shu qurilmada saqlanadi. Sinxronlash uchun ilovani oddiy brauzerda oching: my-gym-track.netlify.app. Telegram orqali kirish keyingi bosqichda qo'shiladi.</p>`;
+    if (window.IN_TG && !user) return `<h4>Bulutli sinxronlash</h4><p class="mute small">${esc(status || 'Telegram orqali kirilmoqda…')}</p>${err ? `<p class="warn-t">${esc(err)}</p>` : ''}<div class="row wrap"><button class="btn ghost" data-act="tg-retry">Qayta urinish</button></div>`;
     const e = err ? `<p class="warn-t">${esc(err)}</p>` : '';
     if (!c) {
       return `<h4>Bulutli sinxronlash (Firebase)</h4>
@@ -141,17 +165,17 @@ const Sync = (() => {
     }
     if (!user) {
       return `<h4>Bulutli sinxronlash</h4><p class="mute small">Loyiha: <b>${esc(c.projectId)}</b></p>${e}
-        <div class="row wrap"><button class="btn" data-act="sync-login">Google bilan kirish</button></div>`;
+        <div class="row wrap"><button class="btn" data-act="sync-login">Google bilan kirish</button></div><div id="tgWidget" style="margin-top:12px"></div>`;
     }
     return `<h4>Bulutli sinxronlash</h4>
-      <p class="small">Kirgan: <b>${esc(user.email || user.displayName || '')}</b></p><p class="mute small">${esc(status || 'Tayyor')}</p>${e}
+      <p class="small">Kirgan: <b>${esc(user.email || user.displayName || store.get('tgname', '') || 'Telegram')}</b></p><p class="mute small">${esc(status || 'Tayyor')}</p>${e}
       <div class="row wrap"><button class="btn" data-act="sync-now">Hozir sinxronlash</button><button class="btn ghost" data-act="sync-logout">Chiqish</button></div>`;
   }
 
   window.addEventListener('online', () => { if (user) syncNow(true); else init(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && user) syncNow(true); });
 
-  return { init, html, login, logout, syncNow, touch, saveCfg, clearCfg, get user() { return user; } };
+  return { init, html, login, tgLogin, logout, syncNow, touch, saveCfg, clearCfg, get user() { return user; } };
 })();
 
 window.Sync = Sync;
