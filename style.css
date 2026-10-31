@@ -342,3 +342,18 @@ label.check input{width:20px;height:20px;accent-color:var(--accent);flex:none}
 .photocmp figcaption{font-size:12px;color:var(--mute);text-align:center;margin-top:4px}
 .card .row #photoKind{width:96px;flex:none}
 optgroup{font-style:normal}
+
+/* byudjet rejasi */
+.okt{color:var(--ok);font-weight:700;text-align:center;margin:6px 0}
+.bplist{max-height:340px;overflow-y:auto;margin:10px 0;border:1px solid var(--line);border-radius:12px}
+.bprow{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line)}
+.bprow:last-child{border-bottom:0}
+.bprow input[type=number]{padding:8px 6px;text-align:right}
+.bprow .check{font-size:14px}
+.card .row select{min-width:0}
+
+/* oynani yopish tugmasi (doim ko'rinib turadi) */
+.sheet-top{position:sticky;top:-10px;z-index:5;height:46px;margin:-10px -18px 4px;padding-top:10px;background:linear-gradient(var(--s1) 70%,transparent)}
+.sheet-top .grab{margin:0 auto}
+.sheet-x{position:absolute;right:12px;top:6px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--s2);color:var(--text);font-size:18px;line-height:1;display:grid;place-items:center;padding:0}
+.sheet-x:active{transform:scale(.92)}

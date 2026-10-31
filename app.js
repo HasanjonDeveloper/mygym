@@ -32,6 +32,7 @@ const DEFAULTS = {
     remindOn: false, remindTime: '18:00', remindDays: [1, 3, 5], remindLast: '',   // eslatma
   },
   workouts: [], log: [], bw: [], meals: [], custom: [], meas: [], myprogs: [],
+  budget: { amount: 60000, period: 'day', prices: {}, off: ['whey', 'salmon', 'tuna', 'pbutter'] },
   goal: { kcal: 2500, p: 150, c: 300, f: 70 },
   xp: 0, ach: {}, water: {}, active: null,
 };
@@ -156,7 +157,7 @@ function sanitizeData(d) {
     arr('custom', e => isObj(e) && isStr(e.id) && isStr(e.name) && isStr(e.group));
     arr('meas', m => isObj(m) && isDate(m.date));
     arr('myprogs', p => isObj(p) && isStr(p.id) && isStr(p.name) && Array.isArray(p.days) && p.days.every(dd => isObj(dd) && Array.isArray(dd.ex)));
-    ['profile', 'goal', 'ach', 'water'].forEach(k => { if (d[k] !== undefined) { if (!isObj(d[k])) throw new Error(k); out[k] = d[k]; } });
+    ['profile', 'goal', 'ach', 'water', 'budget'].forEach(k => { if (d[k] !== undefined) { if (!isObj(d[k])) throw new Error(k); out[k] = d[k]; } });
     if (d.xp !== undefined) { if (!isNum(d.xp) || d.xp < 0) throw new Error('xp'); out.xp = d.xp; }
     if (d.active !== undefined) out.active = (d.active === null || (isObj(d.active) && Array.isArray(d.active.exs))) ? d.active : null;
     if (out.goal && !['kcal', 'p', 'c', 'f'].every(k => isNum(out.goal[k]))) delete out.goal;
@@ -594,6 +595,8 @@ function renderDiet() {
       <button class="btn sm" data-act="plan-add" data-mi="${mi}">+ Qo'shish</button></div>
       <ul class="foods">${m.rows.map(r => `<li><span>${esc(r.food.n)}</span><em>${r.g} g${r.food.piece ? ` (~${round1(r.g / r.food.piece)} dona)` : ''}</em></li>`).join('')}</ul></div>`).join('')}
       <button class="btn ghost block" data-act="plan-add-all">Butun rejani bugunga qo'shish</button></div>
+
+    ${window.Budget ? Budget.html() : ''}
 
     <h3 class="sec">Tez qo'shish</h3>
     <form id="foodForm" class="card stack"><select name="food" id="foodSel">${[['🇺🇿 Milliy taomlar va mevalar', e => e[1].uz], ['Boshqa mahsulotlar', e => !e[1].uz]].map(([lbl, fn]) => `<optgroup label="${lbl}">${Object.entries(FOODS).filter(fn).map(([id, f]) => `<option value="${id}">${esc(f.n)}</option>`).join('')}</optgroup>`).join('')}</select>
