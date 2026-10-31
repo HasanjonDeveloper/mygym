@@ -44,7 +44,7 @@ const EX_RAW = [
   ['reardelt', 'Orqa delta (reverse fly)', 'Yelka', 'Gantel', 1, ['Orqa'], 'Oldinga engashing|Gantellarni yonga yoying|Kurakni siqing|Sekin qaytaring', 'Yengil vazndan boshlang.'],
   ['facepull', 'Face pull', 'Yelka', 'Blok', 1, ['Orqa'], 'Arqonni yuz balandligiga o\'rnating|Yuzga qarab torting|Tirsaklar yuqorida|Orqa deltani siqing', 'Yelka sog\'lig\'i uchun juda foydali.'],
   ['shrug', 'Trapetsiya (shrug)', 'Yelka', 'Gantel', 1, ['Orqa'], 'Gantellar yon tomonda|Yelkani quloqqa qarab ko\'taring|1 soniya ushlang|Sekin tushiring', 'Aylantirmang, faqat tepaga.'],
-  ['pike', 'Pike otjimaniya', 'Yelka', 'Tana vazni', 2, ['Triceps'], 'Tanani teskari V shaklga keltiring|Boshingizni polga tushiring|Yelkalar bilan itaring|Takrorlang', 'Oyoqlarni stulga qo\'ysangiz qiyinlashadi.'],
+  ['inchworm', 'Qurtcha yurish (Inchworm)', 'Press', 'Tana vazni', 1, ['Yelka', 'Oyoq'], 'Oyoqlar yaqin, tik turing|Tizzalarni bukmay oldinga egilib qo\'llarni polga qo\'ying|Qo\'llar bilan planka holatigacha yuring|Qo\'llar bilan oyoqqa qaytib, tik turing', 'Oyoqlarni imkon qadar to\'g\'ri tuting, sekin va nazorat bilan bajaring.'],
 
   ['barcurl', 'Shtanga biceps', 'Biceps', 'Shtanga', 1, [], 'Tirsaklar tanaga yopishgan|Shtangani yelkaga qarab ko\'taring|Yuqorida siqing|Sekin tushiring', 'Tanani silkitmang.'],
   ['hammer', 'Bolg\'a (hammer) curl', 'Biceps', 'Gantel', 1, [], 'Gantellarni neytral ushlang|Navbat bilan ko\'taring|Tirsakni qimirlatmang|Sekin tushiring', 'Bilak va brachialisni ham ishlatadi.'],
@@ -68,7 +68,7 @@ const EX_RAW = [
   ['bike', 'Velotrenajyor', 'Kardio', 'Trenajyor', 1, ['Oyoq'], 'O\'rindiqni belga moslang|Tekis aylantiring|Qarshilikni oshirib boring|Nafasni nazorat qiling', 'Tizzaga yengil kardio.'],
   ['rope', 'Arqon sakrash', 'Kardio', 'Arqon', 2, ['Oyoq'], 'Tirsaklar yonda|Bilak bilan aylantiring|Yengil sakrang|Ritm saqlang', 'Eng samarali kardio.'],
   ['rowing', 'Eshkak trenajyori', 'Kardio', 'Trenajyor', 2, ['Orqa', 'Oyoq'], 'Oyoq bilan itaring|Keyin tanani orqaga yoying|Qo\'llarni torting|Teskari tartibda qayting', 'Avval oyoq, keyin tana, keyin qo\'l.'],
-  ['burpee', 'Burpee', 'Kardio', 'Tana vazni', 2, ['Ko\'krak', 'Oyoq'], 'Cho\'kka tushing|Oyoqlarni orqaga tashlang|Otjimaniya qiling|Sakrab turing', 'Ritmni saqlang, shoshmang.'],
+  ['jumpsq', 'Sakrab o\'tirib turish', 'Oyoq', 'Tana vazni', 2, ['Press'], 'Qo\'llar ko\'krakda kesishgan, oyoqlar yelka kengligida|Orqa to\'g\'ri, sonlar polga parallel bo\'lguncha cho\'kkalang|Oyoqlar bilan itarilib yuqoriga sakrang|Yumshoq qo\'nib, darhol keyingi takrorga o\'ting', 'Tizzalar ichkariga egilmasin. Yog\' yoqish uchun juda samarali.'],
 ];
 
 const EXERCISES = EX_RAW.map(([id, name, group, equip, level, sec, steps, tip]) =>
@@ -88,6 +88,7 @@ const ANIM = {
   barcurl: 'Barbell_Curl', hammer: 'Hammer_Curls', inclcurl: 'Incline_Dumbbell_Curl', preacher: 'Preacher_Curl',
   skull: 'EZ-Bar_Skullcrusher', pushdown: 'Triceps_Pushdown', closegrip: 'Close-Grip_Barbell_Bench_Press',
   ohext: 'Standing_Dumbbell_Triceps_Extension', benchdip: 'Bench_Dips',
+  inchworm: 'Inchworm', jumpsq: 'Freehand_Jump_Squat',
   plank: 'Plank', legraise: 'Hanging_Leg_Raise', crunch: 'Crunches', russian: 'Russian_Twist', abwheel: 'Ab_Roller', mountain: 'Mountain_Climbers',
   treadmill: 'Running_Treadmill', bike: 'Bicycling_Stationary', rope: 'Rope_Jumping', rowing: 'Rowing_Stationary',
 };
@@ -119,14 +120,14 @@ const PROGRAMS = [
   ] },
   { id: 'cut', name: 'Ozish · Yog\' yoqish', tag: '4 kun · Boshlang\'ich–O\'rta', desc: 'Kuch mashqlari + kardio. Mushakni saqlab, yog\'ni kamaytiradi. Kaloriya taqchilligi bilan (Dieta bo\'limi) juftlikda ishlating.', days: [
     { name: 'Ozish A · Tepa tana + kardio', ex: [['dbpress', 3, '10-12', 75], ['dbrow', 3, '10-12', 75], ['ohp', 3, '10', 75], ['latpd', 3, '12', 60], ['plank', 3, '45', 30], ['treadmill', 1, '20', 0]] },
-    { name: 'Ozish B · Oyoq + HIIT', ex: [['goblet', 3, '12-15', 60], ['rdl', 3, '10-12', 75], ['lunge', 3, '12', 60], ['hipthrust', 3, '12', 60], ['burpee', 3, '10', 45], ['mountain', 3, '30', 30]] },
-    { name: 'Ozish C · Butun tana (sirkuit)', ex: [['airsquat', 3, '20', 30], ['pushup', 3, '12', 30], ['seatrow', 3, '15', 30], ['pike', 3, '10', 30], ['russian', 3, '20', 30], ['rope', 1, '5', 0]] },
+    { name: 'Ozish B · Oyoq + HIIT', ex: [['goblet', 3, '12-15', 60], ['rdl', 3, '10-12', 75], ['lunge', 3, '12', 60], ['hipthrust', 3, '12', 60], ['jumpsq', 3, '10', 45], ['mountain', 3, '30', 30]] },
+    { name: 'Ozish C · Butun tana (sirkuit)', ex: [['airsquat', 3, '20', 30], ['pushup', 3, '12', 30], ['seatrow', 3, '15', 30], ['inchworm', 3, '10', 30], ['russian', 3, '20', 30], ['rope', 1, '5', 0]] },
     { name: 'Ozish D · Kardio + press', ex: [['bike', 1, '30', 0], ['legraise', 3, '15', 30], ['crunch', 3, '20', 30], ['plank', 3, '60', 30], ['rowing', 1, '10', 0]] },
   ] },
   { id: 'home', name: 'Uyda mashg\'ulot', tag: '3 kun · Jihozsiz', desc: 'Zal kerak emas. Faqat tana vazni bilan.', days: [
-    { name: 'Uy A · Itarish', ex: [['pushup', 4, '12', 60], ['airsquat', 4, '20', 45], ['pike', 3, '8-10', 60], ['plank', 3, '45', 45]] },
+    { name: 'Uy A · Itarish', ex: [['pushup', 4, '12', 60], ['airsquat', 4, '20', 45], ['inchworm', 3, '8-10', 60], ['plank', 3, '45', 45]] },
     { name: 'Uy B · Oyoq', ex: [['lunge', 3, '12', 60], ['glutebr', 4, '15', 45], ['benchdip', 3, '12', 60], ['mountain', 3, '30', 45]] },
-    { name: 'Uy C · Kondisioner', ex: [['burpee', 4, '10', 60], ['pushup', 3, '12', 60], ['bulg', 3, '10', 60], ['crunch', 3, '20', 45], ['legraise', 3, '12', 45]] },
+    { name: 'Uy C · Kondisioner', ex: [['jumpsq', 4, '10', 60], ['pushup', 3, '12', 60], ['bulg', 3, '10', 60], ['crunch', 3, '20', 45], ['legraise', 3, '12', 45]] },
   ] },
 ];
 

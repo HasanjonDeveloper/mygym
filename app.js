@@ -51,7 +51,8 @@ const save = k => {
 const allEx = () => [...EXERCISES, ...S.custom];
 const allProgs = () => [...PROGRAMS, ...S.myprogs];
 const findProg = id => allProgs().find(p => p.id === id) || PROGRAMS[0];
-const exById = id => allEx().find(e => e.id === id);
+const LEGACY_EX = { burpee: 'jumpsq', pike: 'inchworm' };   // eski mashq id lari yangilariga yo'naltiriladi
+const exById = id => allEx().find(e => e.id === (LEGACY_EX[id] || id));
 const gm = g => GROUP_META[g] || { c: '#888', i: '🏋️' };
 
 // ====================== statistika / XP ======================
@@ -136,6 +137,8 @@ let sheetKind = '', pbDay = null;
 function openSheet(html, kind = '') { sheetKind = kind; $('#sheetBody').innerHTML = html; $('#sheet').classList.add('open'); if (kind === 'settings' && window.Sync) Sync.mount(); }
 function closeSheet() {
   if (pbDay !== null && PB) { progBuilderSheet(); return; }   // mashq tanlashdan chiqilsa, dastur oynasiga qaytamiz
+  if (sheetKind === 'exinfo' && libCtx) { groupSheet(libCtx); return; }   // mashq tafsilotidan guruh ro'yxatiga qaytish
+  libCtx = null;
   $('#sheet').classList.remove('open'); sheetKind = '';
 }
 
@@ -499,15 +502,15 @@ function pbSave() {
 }
 
 // ====================== TAB: MASHQLAR ======================
-let libGroup = 'Hammasi';
-
+let libCtx = null;   // ochiq guruh oynasi (mashq tafsilotidan keyin shu yerga qaytamiz)
 function renderLib() {
   const keepQ = $('#libSearch') ? $('#libSearch').value : '';
   const hadFocus = document.activeElement && document.activeElement.id === 'libSearch';
+  const all = allEx();
   $('#tab-lib').innerHTML = `
-    <input id="libSearch" type="search" placeholder="🔍 ${allEx().length} ta mashq ichidan qidirish" value="${esc(keepQ)}" autocomplete="off">
-    <div class="chips scroll">${['Hammasi', ...GROUPS].map(g => `<button class="${g === libGroup ? 'on' : ''}" data-act="lib-group" data-g="${esc(g)}">${g === 'Hammasi' ? '' : `<i class="gd" style="background:${gm(g).c}"></i>`}${esc(g)}</button>`).join('')}</div>
-    <div id="libGrid" class="exgrid"></div>
+    <input id="libSearch" type="search" placeholder="Qidirish · ${all.length} ta mashq" value="${esc(keepQ)}" autocomplete="off">
+    <div id="libGrid"></div>
+    <div id="libTiles" class="gtiles">${GROUPS.map(g => { const n = all.filter(e => e.group === g).length; return `<button class="gtile" data-act="lib-open" data-g="${esc(g)}" style="--c:${gm(g).c}"><i class="gd" style="background:${gm(g).c}"></i><b>${esc(g)}</b><small>${n} ta mashq</small></button>`; }).join('')}</div>
     <details class="card"><summary>+ O'z mashqingizni qo'shish</summary>
       <form id="customForm" class="stack"><input name="name" placeholder="Mashq nomi" required maxlength="60">
         <select name="group">${GROUPS.map(g => `<option>${esc(g)}</option>`).join('')}</select>
@@ -516,12 +519,23 @@ function renderLib() {
   if (hadFocus) { const i = $('#libSearch'); i.focus(); i.setSelectionRange(keepQ.length, keepQ.length); }
 }
 
+const exRow = e => `<button class="exrow" data-act="ex-info" data-ex="${esc(e.id)}" style="--c:${gm(e.group).c}">
+  ${ANIM[e.id] ? `<img class="thumb" src="${ANIM_BASE}${ANIM[e.id]}/0.jpg" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : `<span class="thumb ph"><i class="gd" style="background:${gm(e.group).c}"></i></span>`}
+  <span class="grow"><b>${esc(e.name)}</b><small>${esc(e.equip || 'Maxsus')}${e.level ? ' · ' + esc(LEVELS[e.level]) : ''}</small></span><span class="chev">›</span></button>`;
+
+// Qidiruv: natijalar ro'yxat bo'lib chiqadi, bo'sh bo'lsa guruh kartalari ko'rinadi
 function drawLibGrid() {
   const q = $('#libSearch').value.trim().toLowerCase();
-  const list = allEx().filter(e => (libGroup === 'Hammasi' || e.group === libGroup) && e.name.toLowerCase().includes(q));
-  $('#libGrid').innerHTML = list.length ? list.map(e => `<button class="excell" data-act="ex-info" data-ex="${esc(e.id)}" style="--c:${gm(e.group).c}">
-    <b>${esc(e.name)}</b><small>${esc(e.group)} · ${esc(e.equip || 'Maxsus')}</small></button>`).join('')
-    : '<div class="empty">Hech narsa topilmadi</div>';
+  $('#libTiles').hidden = !!q;
+  $('#libGrid').innerHTML = !q ? '' : (() => {
+    const list = allEx().filter(e => e.name.toLowerCase().includes(q) || e.group.toLowerCase().includes(q));
+    return list.length ? `<div class="exlist">${list.map(exRow).join('')}</div>` : '<div class="empty">Hech narsa topilmadi</div>';
+  })();
+}
+function groupSheet(g) {
+  libCtx = g;
+  const list = allEx().filter(e => e.group === g);
+  openSheet(`<h2><i class="gd" style="background:${gm(g).c};margin-right:8px"></i>${esc(g)}</h2><p class="mute small">${list.length} ta mashq</p><div class="exlist">${list.map(exRow).join('')}</div>`, 'libgroup');
 }
 
 function exInfoSheet(id) {
@@ -543,7 +557,7 @@ function exInfoSheet(id) {
     ${sets.length ? `<div class="stats3"><div><b>${best} kg</b><small>Eng og'ir</small></div><div><b>${Math.round(e1)} kg</b><small>Taxm. 1RM</small></div><div><b>${sets.length}</b><small>Jami set</small></div></div>` : ''}
     ${S.active ? `<button class="btn block" data-act="pick-ex" data-ex="${esc(e.id)}">Mashg'ulotga qo'shish</button>` : ''}
     ${e.custom ? `<button class="btn ghost block danger" data-act="del-custom" data-ex="${esc(e.id)}">O'chirish</button>` : ''}
-  </div>`);
+  </div>`, 'exinfo');
 }
 
 // ====================== TAB: DIETA ======================
@@ -1060,7 +1074,7 @@ const ACTIONS = {
     const paused = el.classList.toggle('paused');
     $('.play', el).textContent = paused ? '▶' : '⏸';
   },
-  'lib-group': el => { libGroup = el.dataset.g; renderLib(); },
+  'lib-open': el => groupSheet(el.dataset.g),
   'del-custom': el => {
     S.custom = S.custom.filter(e => e.id !== el.dataset.ex); save('custom'); closeSheet(); renderAll();
   },
