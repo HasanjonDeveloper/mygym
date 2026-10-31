@@ -1,0 +1,30 @@
+# GymTrack — Netlify sozlamasi (build kerak emas, statik sayt)
+[build]
+  publish = "."
+
+# Service worker va manifest har doim yangi bo'lsin
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+    Service-Worker-Allowed = "/"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "no-cache"
+
+# Mashq rasmlari o'zgarmaydi — uzoq keshlanadi
+[[headers]]
+  for = "/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # Google bilan kirish oynasi (popup) ishlashi uchun
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"

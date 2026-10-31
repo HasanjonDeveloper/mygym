@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12">
+<title>GymTrack</title>
+<link rel="manifest" href="manifest.json">
+<meta name="description" content="GymTrack: mashg'ulot dasturlari, mashqlar, progress, dieta va taymer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><img src="icon.svg" alt="" width="28" height="28"><h1>GymTrack</h1></div>
+  <div class="top-r">
+    <button class="ico" data-act="timer" aria-label="Asboblar: taymer va kalkulyatorlar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 1.5M9.5 3h5M12 3v3"/></svg></button>
+    <button class="ico" data-act="settings" aria-label="Sozlamalar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></button>
+  </div>
+</header>
+
+<div id="rest" aria-live="polite">
+  <div class="rest-in"><span>⏱</span><b id="restT">00:00</b>
+    <button class="btn sm ghost" data-act="rest+">+15s</button>
+    <button class="btn sm ghost" data-act="rest-skip" aria-label="O'tkazib yuborish">✕</button></div>
+  <div class="bar thin"><div id="restBar"></div></div>
+</div>
+
+<main>
+  <section id="tab-home" class="tab active"></section>
+  <section id="tab-train" class="tab"></section>
+  <section id="tab-lib" class="tab"></section>
+  <section id="tab-diet" class="tab"></section>
+  <section id="tab-prog" class="tab"></section>
+</main>
+
+<div id="resumeBar" data-act="wk-open"><span>▶ Davom etish</span><b id="resumeName"></b></div>
+
+<nav class="bottom">
+  <button data-tab="home" class="on"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></i><span>Bosh</span></button>
+  <button data-tab="train"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg></i><span>Mashg'ulot</span></button>
+  <button data-tab="lib"><i><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></i><span>Mashqlar</span></button>
+  <button data-tab="diet"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c-2-2.5-6-1.5-6 2.5C6 14 9 20 12 20s6-6 6-10.5C18 5.5 14 4.5 12 7Z"/><path d="M12 7c0-1.5.8-3 2.5-3.5"/></svg></i><span>Dieta</span></button>
+  <button data-tab="prog"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7.5 14 3.5-4 3 2.5 4.5-6"/></svg></i><span>Progress</span></button>
+</nav>
+
+<div id="wk" class="overlay"></div>
+
+<div id="sheet" class="sheet" role="dialog" aria-modal="true"><div class="sheet-panel"><div class="grab"></div><div id="sheetBody"></div></div></div>
+<div id="toasts"></div>
+<div id="dlg" class="dlg"></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="sync.js"></script>
+</body>
+</html>
