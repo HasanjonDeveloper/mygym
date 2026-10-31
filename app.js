@@ -596,9 +596,9 @@ function renderDiet() {
       <button class="btn ghost block" data-act="plan-add-all">Butun rejani bugunga qo'shish</button></div>
 
     <h3 class="sec">Tez qo'shish</h3>
-    <form id="foodForm" class="card stack"><select name="food" id="foodSel">${Object.entries(FOODS).map(([id, f]) => `<option value="${id}">${esc(f.n)}</option>`).join('')}</select>
+    <form id="foodForm" class="card stack"><select name="food" id="foodSel">${[['🇺🇿 Milliy taomlar va mevalar', e => e[1].uz], ['Boshqa mahsulotlar', e => !e[1].uz]].map(([lbl, fn]) => `<optgroup label="${lbl}">${Object.entries(FOODS).filter(fn).map(([id, f]) => `<option value="${id}">${esc(f.n)}</option>`).join('')}</optgroup>`).join('')}</select>
       <div class="row"><input name="g" id="foodG" type="number" inputmode="numeric" min="1" value="100" aria-label="Gramm"><span class="unit">gramm</span><button class="btn">Qo'shish</button></div>
-      <small class="mute" id="foodPrev"></small></form>
+      <small class="mute" id="foodPrev"></small><small class="mute">Milliy taomlar qiymatlari taxminiy: retsept va porsiyaga qarab farq qiladi.</small></form>
     <details class="card"><summary>Qo'lda kiritish</summary><form id="mealForm" class="grid2f">
       <input class="full" name="name" placeholder="Ovqat nomi" required maxlength="60"><input name="kcal" type="number" min="0" placeholder="kkal" required>
       <input name="p" type="number" min="0" placeholder="Oqsil g"><input name="c" type="number" min="0" placeholder="Uglevod g"><input name="f" type="number" min="0" placeholder="Yog' g">
@@ -640,6 +640,96 @@ function lineChart(points, unit) {
     <text x="${P}" y="${H - 10}" class="ax">${esc(points[0].label)}</text><text x="${W - 6}" y="${H - 10}" class="ax" text-anchor="end">${esc(points.at(-1).label)}</text>
     <path d="${area}" fill="url(#gA)"/><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     ${points.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.y).toFixed(1)}" r="3.5" fill="var(--accent)"><title>${esc(p.label)}: ${p.y} ${unit}</title></circle>`).join('')}</svg>`;
+}
+
+
+// ====================== PROGRESS RASMLARI (faqat shu qurilmada, IndexedDB) ======================
+const PHOTO_KINDS = [['front', 'Old'], ['side', 'Yon'], ['back', 'Orqa']];
+let photoSel = [], photoList = [], photoUrls = {};
+
+const idb = {
+  db: null,
+  open() {
+    if (this.db) return Promise.resolve(this.db);
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('gymtrack-photos', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('p', { keyPath: 'id' });
+      r.onsuccess = () => { this.db = r.result; res(r.result); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  async tx(mode, fn) {
+    const db = await this.open();
+    return new Promise((res, rej) => { const t = db.transaction('p', mode), q = fn(t.objectStore('p')); t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); });
+  },
+  all() { return this.tx('readonly', s => s.getAll()); },
+  put(v) { return this.tx('readwrite', s => s.put(v)); },
+  del(id) { return this.tx('readwrite', s => s.delete(id)); },
+};
+
+// Rasmni 1080 px gacha kichraytirib JPEG ga o'giradi (telefon rasmlari 5–10 MB bo'ladi)
+async function shrinkPhoto(file) {
+  let bmp;
+  try { bmp = await createImageBitmap(file); }
+  catch {
+    bmp = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); });
+  }
+  const w0 = bmp.width, h0 = bmp.height, k = Math.min(1, 1080 / Math.max(w0, h0));
+  const c = document.createElement('canvas'); c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  if (bmp.close) bmp.close();
+  return new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('blob'))), 'image/jpeg', 0.8));
+}
+
+function photoCard() {
+  return `<div class="card"><h3>Progress rasmlari <small>faqat shu qurilmada</small></h3>
+    <div class="row"><select id="photoKind" aria-label="Rasm turi">${PHOTO_KINDS.map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select>
+      <label class="btn ghost filebtn grow center">📷 Rasm qo'shish<input type="file" id="photoFile" accept="image/*" hidden></label></div>
+    <div id="photoBox"><div class="empty">Yuklanmoqda…</div></div>
+    <p class="mute small">Taqqoslash uchun ikkita rasmni belgilang. Rasmlar bulutga yuborilmaydi va eksportga kirmaydi; brauzer ma'lumotlari tozalansa yo'qoladi.</p></div>`;
+}
+
+async function loadPhotos() {
+  const box = $('#photoBox'); if (!box) return;
+  try { photoList = (await idb.all()).sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id)); }
+  catch { box.innerHTML = '<div class="empty">Bu brauzerda rasm saqlash imkoni yo\'q</div>'; return; }
+  Object.values(photoUrls).forEach(u => URL.revokeObjectURL(u)); photoUrls = {};
+  photoList.forEach(p => { photoUrls[p.id] = URL.createObjectURL(p.blob); });
+  photoSel = photoSel.filter(id => photoList.some(p => p.id === id));
+  drawPhotos();
+}
+
+function nearestBw(date) {
+  const t = dayNum(date); let best = null;
+  S.bw.forEach(b => { const d = Math.abs(dayNum(b.date) - t); if (d <= 7 && (!best || d < best.d)) best = { d, kg: b.kg }; });
+  return best ? best.kg : null;
+}
+
+function drawPhotos() {
+  const box = $('#photoBox'); if (!box) return;
+  if (!photoList.length) { box.innerHTML = '<div class="empty">Hali rasm yo\'q. Birinchi "oldin" rasmini qo\'shing</div>'; return; }
+  const kind = k => (PHOTO_KINDS.find(x => x[0] === k) || [0, ''])[1];
+  let cmp = '';
+  if (photoSel.length === 2) {
+    const [a, b] = photoSel.map(id => photoList.find(p => p.id === id)).sort((x, y) => x.date.localeCompare(y.date));
+    const days = dayNum(b.date) - dayNum(a.date), wa = nearestBw(a.date), wb = nearestBw(b.date);
+    cmp = `<div class="photocmp"><figure><img src="${photoUrls[a.id]}" alt="Oldin"><figcaption>${fmtDate(a.date)} · ${kind(a.kind)}${wa ? ` · ${wa} kg` : ''}</figcaption></figure>
+      <figure><img src="${photoUrls[b.id]}" alt="Keyin"><figcaption>${fmtDate(b.date)} · ${kind(b.kind)}${wb ? ` · ${wb} kg` : ''}</figcaption></figure></div>
+      <p class="center"><b>${days} kun</b>${wa && wb ? ` · ${round1(wb - wa) > 0 ? '+' : ''}${round1(wb - wa)} kg` : ''}</p>`;
+  }
+  box.innerHTML = `${cmp}<div class="photogrid">${photoList.map(p => `<button class="ph ${photoSel.includes(p.id) ? 'on' : ''}" data-act="photo-sel" data-id="${esc(p.id)}" aria-label="${fmtDate(p.date)} ${kind(p.kind)}">
+      <img src="${photoUrls[p.id]}" alt="" loading="lazy"><span>${shortDate(p.date)} · ${kind(p.kind)}</span></button>`).join('')}</div>
+    ${photoSel.length ? `<div class="row"><button class="btn ghost sm grow" data-act="photo-clear">Belgini bekor qilish</button><button class="btn ghost sm danger" data-act="photo-del">🗑 O'chirish (${photoSel.length})</button></div>` : ''}`;
+}
+
+async function addPhoto(file, kind) {
+  try {
+    if (!file.type.startsWith('image/')) { toast('Bu rasm emas', '⚠️'); return; }
+    const blob = await shrinkPhoto(file);
+    await idb.put({ id: uid(), date: today(), kind, blob });
+    try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch { /* */ }
+    addXp(10); await loadPhotos(); toast('Rasm saqlandi', '📷');
+  } catch { toast('Rasm saqlanmadi', '⚠️'); }
 }
 
 const MEAS = [['waist', 'Bel'], ['chest', 'Ko\'krak'], ['hips', 'Dumba'], ['thigh', 'Son'], ['biceps', 'Biceps'], ['neck', 'Bo\'yin']];
@@ -703,11 +793,13 @@ function renderProg() {
       <form id="bwForm" class="row"><input name="kg" type="number" inputmode="decimal" step="0.1" min="20" max="400" placeholder="Bugungi vazn (kg)" required><button class="btn">Saqlash</button></form>
       <div class="chart">${lineChart(bw.map(b => ({ y: b.kg, label: shortDate(b.date) })), 'kg')}</div></div>
     ${measCard()}
+    ${photoCard()}
     <div class="card"><h3>Mashq progressi</h3>${exHtml}</div>
     <div class="card"><h3>Faollik (16 hafta)</h3><div class="heat">${cells.join('')}</div></div>
     <div class="card"><h3>Mushaklar taqsimoti (30 kun)</h3>${Object.keys(gc).length ? GROUPS.filter(g => gc[g]).map(g => `<div class="gbar"><span>${gm(g).i} ${esc(g)}</span><div class="bar"><div style="width:${gc[g] / gmax * 100}%;background:${gm(g).c}"></div></div><em>${gc[g]}</em></div>`).join('') : '<div class="empty">Ma\'lumot yo\'q</div>'}</div>
     <h3 class="sec">Yutuqlar ${Object.keys(S.ach).length}/${ACHIEVEMENTS.length}</h3>
     <div class="achgrid">${ACHIEVEMENTS.map(a => `<div class="ach ${S.ach[a.id] ? 'on' : ''}"><span>${a.i}</span><b>${esc(a.n)}</b><small>${esc(a.d)}</small></div>`).join('')}</div>`;
+  loadPhotos();
 }
 
 // ====================== sozlamalar ======================
@@ -958,6 +1050,17 @@ const ACTIONS = {
     S.log = S.log.filter(s => s.wid !== el.dataset.id);
     save('workouts'); save('log'); renderAll();
   },
+  'photo-sel': el => {
+    const id = el.dataset.id;
+    photoSel = photoSel.includes(id) ? photoSel.filter(x => x !== id) : [...photoSel, id].slice(-2);
+    drawPhotos();
+  },
+  'photo-clear': () => { photoSel = []; drawPhotos(); },
+  'photo-del': async () => {
+    if (!photoSel.length || !(await ask(`${photoSel.length} ta rasm o'chirilsinmi?`, 'O\'chirish'))) return;
+    for (const id of photoSel) await idb.del(id);
+    photoSel = []; loadPhotos();
+  },
   'meas-del': async () => {
     if (!S.meas.length || !(await ask('Oxirgi o\'lchov yozuvi o\'chirilsinmi?', 'O\'chirish'))) return;
     const last = [...S.meas].sort((a, b) => a.date.localeCompare(b.date)).at(-1);
@@ -1043,6 +1146,10 @@ document.addEventListener('change', e => {
   else if (e.target.id === 'plateBar') updatePlate();
   else if (e.target.id === 'progSel') { progEx = e.target.value; renderProg(); }
   else if (e.target.id === 'measSel') { measKey = e.target.value; renderProg(); }
+  else if (e.target.id === 'photoFile') {
+    const input = e.target, f = input.files[0], kind = $('#photoKind') ? $('#photoKind').value : 'front';
+    if (f) addPhoto(f, kind).finally(() => { input.value = ''; });
+  }
   else if (e.target.id === 'importFile') {
     const input = e.target, file = input.files[0]; if (!file) return;
     if (file.size > 20e6) { toast('Fayl juda katta', '⚠️'); input.value = ''; return; }
