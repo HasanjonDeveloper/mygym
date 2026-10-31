@@ -130,13 +130,13 @@ const Budget = (() => {
     cur.days.forEach(d => d.items.forEach(x => { agg[x.id] = (agg[x.id] || 0) + x.g; }));
     const rows = Object.entries(agg).map(([id, g]) => ({ id, g, c: g * price(id) / 1000 })).sort((a, b) => b.c - a.c);
     const total = rows.reduce((s, r) => s + r.c, 0);
-    return `<h4>🛒 Haftalik xarid ro'yxati</h4><ul class="foods">${rows.map(r => `<li><span>${esc(FOODS[r.id].n)}</span><em>${r.g >= 1000 ? round1(r.g / 1000) + ' kg' : r.g + ' g'} · ${money(r.c)}</em></li>`).join('')}</ul>
+    return `<h4>Haftalik xarid ro'yxati</h4><ul class="foods">${rows.map(r => `<li><span>${esc(FOODS[r.id].n)}</span><em>${r.g >= 1000 ? round1(r.g / 1000) + ' kg' : r.g + ' g'} · ${money(r.c)}</em></li>`).join('')}</ul>
       <p class="center"><b>Jami: ${money(total)} so'm</b></p>`;
   }
 
   function sheet() {
     const d = cur.days[cur.tab], ms = meals(d.items), T = cur.T;
-    openSheet(`<h2>💰 Byudjet rejasi</h2>
+    openSheet(`<h2>Byudjet rejasi</h2>
       <p class="mute small">Reja sun'iy intellekt modeli bilan emas, optimallashtirish algoritmi bilan hisoblandi. Narxlar taxminiy: Dieta → "Narxlar" bo'limida o'zingizniki bilan almashtiring.</p>
       <div class="stats3"><div><b>${money(d.cost)}</b><small>so'm / kun</small></div><div><b>${Math.round(d.tot.k)}</b><small>kkal (${T.kcal})</small></div><div><b>${Math.round(d.tot.p)}</b><small>oqsil g (${T.p})</small></div></div>
       <p class="small mute center">Uglevod ${Math.round(d.tot.c)} g (${T.c}) · Yog' ${Math.round(d.tot.f)} g (${T.f})${cur.week ? ` · Hafta: ${money(cur.days.reduce((s, x) => s + x.cost, 0))} so'm` : ''}</p>
@@ -146,13 +146,13 @@ const Budget = (() => {
         <ul class="foods">${m.list.map(x => `<li><span>${esc(FOODS[x.id].n)}</span><em>${x.g} g${pieces(x.id, x.g)}</em></li>`).join('')}</ul></div>`).join('')}</div>`}
       <div class="stack">
         ${cur.shop ? '' : '<button class="btn" data-act="bud-add">Shu kunni dietaga qo\'shish</button>'}
-        ${cur.week ? `<button class="btn ghost" data-act="bud-shop">${cur.shop ? '← Kunlik rejaga qaytish' : '🛒 Xarid ro\'yxati'}</button>` : ''}
-        <button class="btn ghost" data-act="bud-again">🔄 Boshqa variant</button></div>`, 'budget');
+        ${cur.week ? `<button class="btn ghost" data-act="bud-shop">${cur.shop ? '← Kunlik rejaga qaytish' : 'Xarid ro\'yxati'}</button>` : ''}
+        <button class="btn ghost" data-act="bud-again">Boshqa variant</button></div>`, 'budget');
   }
 
   function html() {
     const b = B(), g = S.goal, off = new Set(b.off || []);
-    return `<h3 class="sec">💰 Byudjet bo'yicha reja</h3>
+    return `<h3 class="sec">Byudjet bo'yicha reja</h3>
       <form id="budForm" class="card stack">
         <div class="row"><input name="amount" type="number" inputmode="numeric" min="1000" step="1000" value="${b.amount}" required aria-label="Byudjet (so'm)">
           <select name="period" aria-label="Davr" style="width:auto"><option value="day" ${b.period === 'day' ? 'selected' : ''}>so'm / kun</option><option value="week" ${b.period === 'week' ? 'selected' : ''}>so'm / hafta</option></select></div>

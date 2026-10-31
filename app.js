@@ -241,7 +241,6 @@ function renderHome() {
   const base = 100 * (lv - 1) ** 2, next = 100 * lv ** 2;
   const hour = new Date().getHours();
   const greet = hour < 6 ? 'Xayrli tun' : hour < 12 ? 'Xayrli tong' : hour < 18 ? 'Xayrli kun' : 'Xayrli kech';
-  const quote = QUOTES[dayNum(today()) % QUOTES.length];
 
   const ws = weekStartKey(), wsN = dayNum(ws);
   const doneDays = new Set(S.workouts.map(w => w.date));
@@ -259,31 +258,38 @@ function renderHome() {
   const lastAch = Object.entries(S.ach).sort((a, b) => b[1].localeCompare(a[1]))[0];
   const la = lastAch && ACHIEVEMENTS.find(a => a.id === lastAch[0]);
 
+  const [title, ...rest] = day.name.split(' · '), sub = rest.join(', ');
+  const kcalPct = S.goal.kcal ? Math.min(100, kcal / S.goal.kcal * 100) : 0;
+
   $('#tab-home').innerHTML = `
-    <div class="hero fade">
-      <div class="hero-t"><small>${greet}</small><h2>${esc(S.profile.name || 'Chempion')} 👋</h2><p>${quote}</p></div>
-      <div class="lvlbox"><div class="lvlnum">${lv}</div><div><b>${levelTitle(lv)}</b><small>${S.xp - base} / ${next - base} XP</small></div></div>
-      <div class="bar"><div style="width:${((S.xp - base) / (next - base)) * 100}%"></div></div>
+    <div class="greet"><small>${greet}</small><h2>${esc(S.profile.name || 'Chempion')}</h2></div>
+
+    <section class="hero today">
+      <div class="hero-meta">${esc(P.name)}, ${idx + 1}-kun (${P.days.length} tadan)</div>
+      <h2 class="hero-title">${esc(title)}</h2>
+      ${sub ? `<p class="hero-sub">${esc(sub)}</p>` : ''}
+      <p class="hero-facts">${day.ex.length} mashq, ${sets} set, taxminan ${Math.round(sets * 2.8)} daqiqa</p>
+      <button class="btn lg block" data-act="${S.active ? 'wk-open' : 'start-day'}">${S.active ? 'Davom etish' : 'Boshlash'}</button>
+      ${S.active ? `<span class="hero-resume">${esc(S.active.name)} hozir davom etmoqda</span>` : ''}
+    </section>
+
+    <section class="week">
+      <div class="week-head"><h3>Bu hafta</h3><b>${st.weekCount} / ${st.weeklyGoal}</b></div>
+      <div class="weekstrip">${strip}</div>
+    </section>
+
+    <div class="duo">
+      <div class="kv"><span class="num ${st.streak ? 'hot' : ''}">${st.streak}</span><small>kun ketma-ket</small></div>
+      <div class="kv"><span class="num">${lv}</span><small>${levelTitle(lv)}, ${S.xp - base} / ${next - base} XP</small>
+        <div class="bar"><div style="width:${((S.xp - base) / (next - base)) * 100}%"></div></div></div>
     </div>
-    <div class="grid2 fade">
-      <div class="card stat"><div class="big-emoji">🔥</div><b>${st.streak}</b><small>Seriya</small></div>
-      <div class="card stat">${ring(st.weekCount / st.weeklyGoal, `${st.weekCount}/${st.weeklyGoal}`, 'Hafta')}</div>
+
+    <div class="daylog">
+      <div class="dl" data-go="diet"><div class="grow"><b>Kaloriya</b><small>${Math.round(kcal)} / ${S.goal.kcal} kkal</small><div class="bar"><div class="${kcal > S.goal.kcal ? 'over' : ''}" style="width:${kcalPct}%"></div></div></div></div>
+      <div class="dl"><div class="grow"><b>Suv</b><small>${water * 250} ml, maqsad ${WATER_GOAL} stakan</small></div>
+        <div class="stepper"><button data-act="water-" aria-label="Kamaytirish">−</button><b>${water}</b><button class="plus" data-act="water+" aria-label="Qo'shish">+</button></div></div>
     </div>
-    <div class="card fade"><div class="weekstrip">${strip}</div></div>
-    <div class="card today fade">
-      <small class="eyebrow">Bugungi mashg'ulot · ${esc(P.name)}</small>
-      <h3>${esc(day.name)}</h3>
-      <p class="mute">${day.ex.length} ta mashq · ${sets} set · ~${Math.round(sets * 2.8)} daqiqa</p>
-      <div class="chips-s">${day.ex.map(e => `<span style="--c:${gm(exById(e[0])?.group).c}">${esc(exById(e[0])?.name || '')}</span>`).join('')}</div>
-      <button class="btn block" data-act="${S.active ? 'wk-open' : 'start-day'}">${S.active ? '▶ Mashg\'ulotni davom ettirish' : '▶ Mashg\'ulotni boshlash'}</button>
-      ${S.active ? '' : `<small class="mute center">${idx + 1}/${P.days.length}-kun · dasturni "Mashg'ulot" bo'limida almashtiring</small>`}
-    </div>
-    <div class="grid2 fade">
-      <div class="card" data-go="diet">${ring(S.goal.kcal ? kcal / S.goal.kcal : 0, Math.round(kcal), `/ ${S.goal.kcal} kkal`, 'var(--ok)')}</div>
-      <div class="card water-card"><b>💧 ${water}/${WATER_GOAL}</b><small>stakan suv</small>
-        <div class="row"><button class="btn sm ghost" data-act="water-" aria-label="Kamaytirish">−</button><button class="btn sm" data-act="water+" aria-label="Qo'shish">+</button></div></div>
-    </div>
-    ${la ? `<div class="card ach-last fade"><span class="ai">${la.i}</span><div><small class="eyebrow">Oxirgi yutuq</small><b>${esc(la.n)}</b><small class="mute">${esc(la.d)}</small></div></div>` : ''}`;
+    ${la ? `<div class="card ach-last"><span class="ai">${la.i}</span><div><small>Oxirgi yutuq</small><b>${esc(la.n)}</b><small>${esc(la.d)}</small></div></div>` : ''}`;
 }
 
 // ====================== TAB: MASHG'ULOT ======================
@@ -292,7 +298,7 @@ function renderTrain() {
   const next = S.profile.dayIdx % cur.days.length;
   const recent = [...S.workouts].reverse().slice(0, 6);
   $('#tab-train').innerHTML = `
-    ${S.active ? `<div class="card resume" data-act="wk-open"><b>⏱ Mashg'ulot davom etmoqda</b><small>${esc(S.active.name)} — ochish uchun bosing</small></div>` : ''}
+    ${S.active ? `<div class="card resume" data-act="wk-open"><b>Mashg'ulot davom etmoqda</b><small>${esc(S.active.name)} — ochish uchun bosing</small></div>` : ''}
     <h3 class="sec">Dastur tanlang</h3>
     <div class="hscroll">${allProgs().map(p => `<button class="pcard ${p.id === cur.id ? 'on' : ''}" data-act="pick-prog" data-id="${p.id}">
       <b>${p.custom ? '⭐ ' : ''}${esc(p.name)}</b><small>${esc(p.tag)}</small><span>${esc(p.desc)}</span></button>`).join('')}
@@ -353,8 +359,8 @@ function renderWk() {
           ? `<img class="thumb" src="${ANIM_BASE}${ANIM[e.exId]}/0.jpg" alt="" loading="lazy" data-act="ex-info" data-ex="${esc(e.exId)}" onerror="this.outerHTML='<span class=&quot;gdot&quot; style=&quot;background:${gm(ex?.group).c}&quot;></span>'">`
           : `<span class="gdot" style="background:${gm(ex?.group).c}"></span>`}
           <div class="grow"><b>${esc(ex ? ex.name : 'Noma\'lum')}</b><small>Maqsad ${e.sets.length}×${esc(e.target)} · dam ${e.rest}s</small></div>
-          <button class="ico" data-act="ex-info" data-ex="${e.exId}" aria-label="Ma'lumot">ℹ️</button>
-          <button class="ico" data-act="ex-del" data-xi="${xi}" aria-label="Olib tashlash">🗑</button></div>
+          <button class="ico" data-act="ex-info" data-ex="${e.exId}" aria-label="Ma'lumot">ⓘ</button>
+          <button class="ico" data-act="ex-del" data-xi="${xi}" aria-label="Olib tashlash">✕</button></div>
           <div class="sethead"><span>SET</span><span>OLDIN</span><span>KG</span><span>TAKROR</span><span></span></div>
           ${e.sets.map((s, si) => `<div class="setrow ${s.done ? 'done' : ''}"><span class="sn">${si + 1}</span>
             <span class="prev">${last[si] ? `${last[si].weight}×${last[si].reps}` : '–'}</span>
@@ -459,7 +465,7 @@ function pbEdit(id) {
 function progBuilderSheet() {
   pbDay = null;
   const keep = $('#sheet .sheet-panel') ? $('#sheet .sheet-panel').scrollTop : 0;
-  openSheet(`<h2>${PB.id ? '✏️ Dasturni tahrirlash' : '⭐ Yangi dastur'}</h2><div class="stack">
+  openSheet(`<h2>${PB.id ? 'Dasturni tahrirlash' : 'Yangi dastur'}</h2><div class="stack">
     <label>Dastur nomi<input data-pb="name" value="${esc(PB.name)}" maxlength="40" placeholder="Masalan: Mening split"></label>
     ${PB.days.map((d, di) => `<div class="card pbday">
       <div class="row"><input data-pb="dname" data-di="${di}" value="${esc(d.name)}" maxlength="40" placeholder="Kun nomi" aria-label="Kun nomi">
@@ -500,7 +506,7 @@ function renderLib() {
   const hadFocus = document.activeElement && document.activeElement.id === 'libSearch';
   $('#tab-lib').innerHTML = `
     <input id="libSearch" type="search" placeholder="🔍 ${allEx().length} ta mashq ichidan qidirish" value="${esc(keepQ)}" autocomplete="off">
-    <div class="chips scroll">${['Hammasi', ...GROUPS].map(g => `<button class="${g === libGroup ? 'on' : ''}" data-act="lib-group" data-g="${esc(g)}">${g === 'Hammasi' ? '' : gm(g).i + ' '}${esc(g)}</button>`).join('')}</div>
+    <div class="chips scroll">${['Hammasi', ...GROUPS].map(g => `<button class="${g === libGroup ? 'on' : ''}" data-act="lib-group" data-g="${esc(g)}">${g === 'Hammasi' ? '' : `<i class="gd" style="background:${gm(g).c}"></i>`}${esc(g)}</button>`).join('')}</div>
     <div id="libGrid" class="exgrid"></div>
     <details class="card"><summary>+ O'z mashqingizni qo'shish</summary>
       <form id="customForm" class="stack"><input name="name" placeholder="Mashq nomi" required maxlength="60">
@@ -514,7 +520,7 @@ function drawLibGrid() {
   const q = $('#libSearch').value.trim().toLowerCase();
   const list = allEx().filter(e => (libGroup === 'Hammasi' || e.group === libGroup) && e.name.toLowerCase().includes(q));
   $('#libGrid').innerHTML = list.length ? list.map(e => `<button class="excell" data-act="ex-info" data-ex="${esc(e.id)}" style="--c:${gm(e.group).c}">
-    <span class="eg">${gm(e.group).i}</span><b>${esc(e.name)}</b><small>${esc(e.group)} · ${esc(e.equip || 'Maxsus')}</small></button>`).join('')
+    <b>${esc(e.name)}</b><small>${esc(e.group)} · ${esc(e.equip || 'Maxsus')}</small></button>`).join('')
     : '<div class="empty">Hech narsa topilmadi</div>';
 }
 
@@ -526,7 +532,7 @@ function exInfoSheet(id) {
   const stepsHtml = e.steps ? `<h4>Texnika</h4><ol class="steps">${e.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>` : '';
   openSheet(`<div class="exinfo" style="--c:${gm(e.group).c}">
     <h2>${esc(e.name)}</h2>
-    <div class="badges"><span class="tag" style="--c:${gm(e.group).c}">${gm(e.group).i} ${esc(e.group)}</span><span class="tag">${esc(e.equip || 'Maxsus')}</span>${e.level ? `<span class="tag">${LEVELS[e.level]}</span>` : ''}</div>
+    <div class="badges"><span class="tag" style="--c:${gm(e.group).c}"><i class="gd" style="background:${gm(e.group).c};margin-right:6px"></i>${esc(e.group)}</span><span class="tag">${esc(e.equip || 'Maxsus')}</span>${e.level ? `<span class="tag">${LEVELS[e.level]}</span>` : ''}</div>
     ${ANIM[id] ? `<div class="animwrap"><div class="anim" data-act="anim-toggle" title="To'xtatish / davom ettirish">
       <img src="${ANIM_BASE}${ANIM[id]}/0.jpg" alt="${esc(e.name)} — boshlang'ich holat" loading="lazy" onerror="this.closest('.animwrap').remove()">
       <img class="b" src="${ANIM_BASE}${ANIM[id]}/1.jpg" alt="${esc(e.name)} — oxirgi holat" loading="lazy" onerror="this.closest('.animwrap').remove()">
@@ -568,9 +574,9 @@ function renderDiet() {
   $('#tab-diet').innerHTML = `
     <div class="card fade"><div class="dsum">${ring(g.kcal ? tot.k / g.kcal : 0, Math.round(tot.k), `/ ${g.kcal} kkal`, 'var(--ok)')}
       <div class="grow">${bar('Oqsil', tot.p, g.p, 'g')}${bar('Uglevod', tot.c, g.c, 'g')}${bar('Yog\'', tot.f, g.f, 'g')}</div></div>
-      <div class="water"><span>💧 Suv</span><div class="glasses">${Array.from({ length: WATER_GOAL }, (_, i) => `<button class="${i < water ? 'on' : ''}" data-act="water-set" data-n="${i + 1}" aria-label="${i + 1}-stakan"></button>`).join('')}</div><small>${water * 250} ml</small></div></div>
+      <div class="water"><span>Suv</span><div class="glasses">${Array.from({ length: WATER_GOAL }, (_, i) => `<button class="${i < water ? 'on' : ''}" data-act="water-set" data-n="${i + 1}" aria-label="${i + 1}-stakan"></button>`).join('')}</div><small>${water * 250} ml</small></div></div>
 
-    <details class="card"><summary>🎯 Kunlik maqsadni hisoblash</summary>
+    <details class="card"><summary>Kunlik maqsadni hisoblash</summary>
       <form id="calcForm" class="grid2f">
         <select name="sex"><option value="m">Erkak</option><option value="f">Ayol</option></select>
         <input name="age" type="number" inputmode="numeric" placeholder="Yosh" min="12" max="90" required>
@@ -587,8 +593,8 @@ function renderDiet() {
         <input name="c" type="number" value="${g.c}" aria-label="Uglevod"><input name="f" type="number" value="${g.f}" aria-label="Yog'">
         <button class="btn ghost full">Saqlash</button></form></details>
 
-    <h3 class="sec">🍽 Ovqatlanish rejasi</h3>
-    <div class="seg">${Object.entries(MEAL_PLANS).map(([k, p]) => `<button class="${k === pg ? 'on' : ''}" data-act="plan-goal" data-k="${k}">${p.icon} ${esc(p.name)}</button>`).join('')}</div>
+    <h3 class="sec">Ovqatlanish rejasi</h3>
+    <div class="seg">${Object.entries(MEAL_PLANS).map(([k, p]) => `<button class="${k === pg ? 'on' : ''}" data-act="plan-goal" data-k="${k}">${esc(p.name)}</button>`).join('')}</div>
     <div class="seg small">${MEAL_PLANS[pg].variants.map((_, i) => `<button class="${i === S.profile.planVar % MEAL_PLANS[pg].variants.length ? 'on' : ''}" data-act="plan-var" data-i="${i}">Variant ${'AB'[i]}</button>`).join('')}</div>
     <p class="mute small">Reja ${g.kcal} kkal maqsadingizga moslashtirildi: ${Math.round(planTot.k)} kkal · O ${Math.round(planTot.p)} · U ${Math.round(planTot.c)} · Y ${Math.round(planTot.f)}</p>
     <div class="list">${plan.map((m, mi) => `<div class="card meal"><div class="dh"><div><b>${esc(m.name)}</b><small class="mute">${Math.round(m.t.k)} kkal · O ${Math.round(m.t.p)} · U ${Math.round(m.t.c)} · Y ${Math.round(m.t.f)}</small></div>
@@ -799,7 +805,7 @@ function renderProg() {
     ${photoCard()}
     <div class="card"><h3>Mashq progressi</h3>${exHtml}</div>
     <div class="card"><h3>Faollik (16 hafta)</h3><div class="heat">${cells.join('')}</div></div>
-    <div class="card"><h3>Mushaklar taqsimoti (30 kun)</h3>${Object.keys(gc).length ? GROUPS.filter(g => gc[g]).map(g => `<div class="gbar"><span>${gm(g).i} ${esc(g)}</span><div class="bar"><div style="width:${gc[g] / gmax * 100}%;background:${gm(g).c}"></div></div><em>${gc[g]}</em></div>`).join('') : '<div class="empty">Ma\'lumot yo\'q</div>'}</div>
+    <div class="card"><h3>Mushaklar taqsimoti (30 kun)</h3>${Object.keys(gc).length ? GROUPS.filter(g => gc[g]).map(g => `<div class="gbar"><span><i class="gd" style="background:${gm(g).c}"></i>${esc(g)}</span><div class="bar"><div style="width:${gc[g] / gmax * 100}%;background:${gm(g).c}"></div></div><em>${gc[g]}</em></div>`).join('') : '<div class="empty">Ma\'lumot yo\'q</div>'}</div>
     <h3 class="sec">Yutuqlar ${Object.keys(S.ach).length}/${ACHIEVEMENTS.length}</h3>
     <div class="achgrid">${ACHIEVEMENTS.map(a => `<div class="ach ${S.ach[a.id] ? 'on' : ''}"><span>${a.i}</span><b>${esc(a.n)}</b><small>${esc(a.d)}</small></div>`).join('')}</div>`;
   loadPhotos();
@@ -809,11 +815,11 @@ function renderProg() {
 const KEYS = Object.keys(DEFAULTS);
 
 function settingsSheet() {
-  openSheet(`<h2>⚙️ Sozlamalar</h2><form id="setForm" class="stack">
+  openSheet(`<h2>Sozlamalar</h2><form id="setForm" class="stack">
     <label>Ismingiz<input name="name" value="${esc(S.profile.name)}" maxlength="30" placeholder="Ism"></label>
     <label>Haftalik maqsad (mashg'ulot kunlari)<select name="goal">${[2, 3, 4, 5, 6].map(n => `<option ${n === S.profile.weeklyGoal ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
     <label>Mavzu<select name="theme">${[['dark', 'Qorong\'i'], ['light', 'Yorug\''], ['auto', 'Qurilmaga mos']].map(([v, n]) => `<option value="${v}" ${S.profile.theme === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
-    <h4>🔔 Mashg'ulot eslatmasi</h4>
+    <h4>Mashg'ulot eslatmasi</h4>
     <label class="check"><input type="checkbox" name="remindOn" ${S.profile.remindOn ? 'checked' : ''}> Eslatmani yoqish</label>
     <label>Vaqt<input type="time" name="remindTime" value="${esc(S.profile.remindTime)}"></label>
     <div class="daypick">${WEEKDAYS.map((d, i) => `<label class="dp"><input type="checkbox" name="rd" value="${(i + 1) % 7}" ${S.profile.remindDays.includes((i + 1) % 7) ? 'checked' : ''}><span>${d}</span></label>`).join('')}</div>
@@ -876,14 +882,14 @@ setInterval(checkReminder, 60000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkReminder(); });
 
 function timerSheet() {
-  openSheet(`<h2>🧰 Asboblar</h2>
-    <h4>⏱ Dam olish taymeri</h4><div class="presets">${[30, 45, 60, 90, 120, 180].map(s => `<button class="btn ghost" data-act="rest-start" data-s="${s}">${s >= 60 ? s / 60 + ' daq' : s + ' s'}</button>`).join('')}</div>
+  openSheet(`<h2>Asboblar</h2>
+    <h4>Dam olish taymeri</h4><div class="presets">${[30, 45, 60, 90, 120, 180].map(s => `<button class="btn ghost" data-act="rest-start" data-s="${s}">${s >= 60 ? s / 60 + ' daq' : s + ' s'}</button>`).join('')}</div>
     <form id="timerForm" class="row"><input name="s" type="number" inputmode="numeric" min="5" max="900" placeholder="Soniya"><button class="btn">Boshlash</button></form>
-    <h4>🏋️ Shtanga disklari</h4>
+    <h4>Shtanga disklari</h4>
     <div class="row"><input id="plateKg" type="number" inputmode="decimal" step="0.5" min="0" placeholder="Jami vazn (kg)" aria-label="Jami vazn">
       <select id="plateBar" aria-label="Grif vazni"><option value="20">Grif 20 kg</option><option value="15">Grif 15 kg</option><option value="10">Grif 10 kg</option></select></div>
     <div id="plateOut" class="calc-out mute small">Maqsadli vaznni kiriting</div>
-    <h4>📊 1RM kalkulyatori</h4>
+    <h4>1RM kalkulyatori</h4>
     <div class="row"><input id="rmKg" type="number" inputmode="decimal" step="0.5" min="0" placeholder="Vazn (kg)" aria-label="Vazn"><input id="rmReps" type="number" inputmode="numeric" min="1" max="30" placeholder="Takror" aria-label="Takror"></div>
     <div id="rmOut" class="calc-out mute small">Vazn va takrorni kiriting</div>`);
 }
@@ -915,7 +921,7 @@ const darkMq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dar
 function applyTheme() {
   const t = S.profile.theme === 'auto' ? (darkMq && !darkMq.matches ? 'light' : 'dark') : (S.profile.theme || 'dark');
   document.documentElement.dataset.theme = t;
-  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = t === 'light' ? '#f5f6fa' : '#0b0d12';
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = t === 'light' ? '#f1f2ec' : '#0b0e16';
 }
 if (darkMq && darkMq.addEventListener) darkMq.addEventListener('change', applyTheme);
 

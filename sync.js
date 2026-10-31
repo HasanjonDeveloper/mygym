@@ -133,16 +133,16 @@ const Sync = (() => {
     const c = cfg();
     const e = err ? `<p class="warn-t">${esc(err)}</p>` : '';
     if (!c) {
-      return `<h4>☁️ Bulutli sinxronlash (Firebase)</h4>
+      return `<h4>Bulutli sinxronlash (Firebase)</h4>
         <p class="mute small">Telefon va kompyuter ma'lumotlarini bir xil qilish uchun. O'z Firebase loyihangiz kerak (bepul Spark tarif yetadi). Batafsil: README.md.</p>
         <form id="syncCfgForm" class="stack"><textarea name="cfg" rows="5" placeholder='Firebase "firebaseConfig" ni shu yerga qo&apos;ying: { apiKey: "...", authDomain: "...", projectId: "...", appId: "..." }' aria-label="Firebase sozlamasi" required></textarea>
         <button class="btn ghost">Sozlamani saqlash</button></form>${e}`;
     }
     if (!user) {
-      return `<h4>☁️ Bulutli sinxronlash</h4><p class="mute small">Loyiha: <b>${esc(c.projectId)}</b></p>${e}
+      return `<h4>Bulutli sinxronlash</h4><p class="mute small">Loyiha: <b>${esc(c.projectId)}</b></p>${e}
         <div class="row wrap"><button class="btn" data-act="sync-login">Google bilan kirish</button></div>`;
     }
-    return `<h4>☁️ Bulutli sinxronlash</h4>
+    return `<h4>Bulutli sinxronlash</h4>
       <p class="small">Kirgan: <b>${esc(user.email || user.displayName || '')}</b></p><p class="mute small">${esc(status || 'Tayyor')}</p>${e}
       <div class="row wrap"><button class="btn" data-act="sync-now">Hozir sinxronlash</button><button class="btn ghost" data-act="sync-logout">Chiqish</button></div>`;
   }
