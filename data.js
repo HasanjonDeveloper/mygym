@@ -117,6 +117,12 @@ const PROGRAMS = [
     { name: 'Yelka', ex: [['ohp', 4, '8', 120], ['latraise', 4, '12', 60], ['reardelt', 4, '12', 60], ['shrug', 4, '12', 60], ['facepull', 3, '15', 60]] },
     { name: 'Qo\'l + Press', ex: [['barcurl', 3, '10', 60], ['skull', 3, '10', 60], ['hammer', 3, '12', 60], ['pushdown', 3, '12', 60], ['legraise', 3, '15', 45], ['abwheel', 3, '10', 60]] },
   ] },
+  { id: 'cut', name: 'Ozish · Yog\' yoqish', tag: '4 kun · Boshlang\'ich–O\'rta', desc: 'Kuch mashqlari + kardio. Mushakni saqlab, yog\'ni kamaytiradi. Kaloriya taqchilligi bilan (Dieta bo\'limi) juftlikda ishlating.', days: [
+    { name: 'Ozish A · Tepa tana + kardio', ex: [['dbpress', 3, '10-12', 75], ['dbrow', 3, '10-12', 75], ['ohp', 3, '10', 75], ['latpd', 3, '12', 60], ['plank', 3, '45', 30], ['treadmill', 1, '20', 0]] },
+    { name: 'Ozish B · Oyoq + HIIT', ex: [['goblet', 3, '12-15', 60], ['rdl', 3, '10-12', 75], ['lunge', 3, '12', 60], ['hipthrust', 3, '12', 60], ['burpee', 3, '10', 45], ['mountain', 3, '30', 30]] },
+    { name: 'Ozish C · Butun tana (sirkuit)', ex: [['airsquat', 3, '20', 30], ['pushup', 3, '12', 30], ['seatrow', 3, '15', 30], ['pike', 3, '10', 30], ['russian', 3, '20', 30], ['rope', 1, '5', 0]] },
+    { name: 'Ozish D · Kardio + press', ex: [['bike', 1, '30', 0], ['legraise', 3, '15', 30], ['crunch', 3, '20', 30], ['plank', 3, '60', 30], ['rowing', 1, '10', 0]] },
+  ] },
   { id: 'home', name: 'Uyda mashg\'ulot', tag: '3 kun · Jihozsiz', desc: 'Zal kerak emas. Faqat tana vazni bilan.', days: [
     { name: 'Uy A · Itarish', ex: [['pushup', 4, '12', 60], ['airsquat', 4, '20', 45], ['pike', 3, '8-10', 60], ['plank', 3, '45', 45]] },
     { name: 'Uy B · Oyoq', ex: [['lunge', 3, '12', 60], ['glutebr', 4, '15', 45], ['benchdip', 3, '12', 60], ['mountain', 3, '30', 45]] },
