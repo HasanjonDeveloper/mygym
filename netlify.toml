@@ -3,6 +3,10 @@
   publish = "."
   functions = "netlify/functions"
 
+# Bot orqali mashg'ulot eslatmasi (har 10 daqiqada tekshiradi)
+[functions."tg-remind"]
+  schedule = "*/10 * * * *"
+
 # Service worker va manifest har doim yangi bo'lsin
 [[headers]]
   for = "/sw.js"

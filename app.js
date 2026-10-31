@@ -823,7 +823,8 @@ function settingsSheet() {
     <label class="check"><input type="checkbox" name="remindOn" ${S.profile.remindOn ? 'checked' : ''}> Eslatmani yoqish</label>
     <label>Vaqt<input type="time" name="remindTime" value="${esc(S.profile.remindTime)}"></label>
     <div class="daypick">${WEEKDAYS.map((d, i) => `<label class="dp"><input type="checkbox" name="rd" value="${(i + 1) % 7}" ${S.profile.remindDays.includes((i + 1) % 7) ? 'checked' : ''}><span>${d}</span></label>`).join('')}</div>
-    <p class="mute small">Eslatma ilova ochiq yoki fonda ishlab turganda chiqadi. Yopiq ilovaga haqiqiy push yuborish alohida server (FCM) talab qiladi. Dam olish taymeri tugaganda ham bildirishnoma keladi.</p>
+    <p class="mute small">Ovozsiz rejimda oddiy bildirishnoma jim bo'ladi. Eng ishonchli yo'l: telefon budilnigi (pastdagi tugma). Telegram orqali kirgan bo'lsangiz, bot ham shu vaqtda xabar yuboradi (ilova yopiq bo'lsa ham). Dam olish taymeri tugaganda baland signal va uzoq tebranish ishlaydi.</p>
+    ${/Android/i.test(navigator.userAgent) && !window.IN_TG ? '<button type="button" class="btn ghost" data-act="alarm-set">⏰ Telefon budilnigini o\'rnatish</button><p class="mute small">Budilnik ilovasi ochiladi, vaqt tayyor turadi. Takrorlanish kunlarini budilnikda belgilab, saqlang. Budilnik ovozsiz rejimda ham jiringlaydi.</p>' : ''}
     <p class="small" id="notifHelp">${esc(notifHelp(notifState()))}</p>
     <button type="button" class="btn ghost" data-act="notif-test">Bildirishnomani sinash</button>
     <button class="btn">Saqlash</button></form>
@@ -856,11 +857,11 @@ function notifHelp(st) {
   if (st === 'default') return 'Ruxsat hali berilmagan. "Bildirishnomani sinash" ni bosing va ruxsat bering.';
   return 'Ruxsat berilgan ✓';
 }
-async function notify(title, body) {
+async function notify(title, body, strong) {
   try {
     if ('Notification' in window && Notification.permission === 'granted') {
       const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
-      if (reg) await reg.showNotification(title, { body, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'gymtrack-' + Date.now(), vibrate: [200, 100, 200] });
+      if (reg) await reg.showNotification(title, { body, icon: 'icon-192.png', badge: 'icon-192.png', tag: strong ? 'gymtrack-rest' : 'gymtrack-' + Date.now(), renotify: !!strong, requireInteraction: !!strong, vibrate: strong ? [600, 150, 600, 150, 600, 150, 900] : [200, 100, 200] });
       else new Notification(title, { body, icon: 'icon-192.png' });
       return true;
     }
@@ -952,17 +953,23 @@ function onboardSheet() {
 let rest = { end: 0, total: 0 }, restId = null, audioCtx = null;
 
 function beep() {
+  // Baland va uzoq signal: 3 marta 3 ta qisqa "bip" (budilnik ohangi), tebranish ham uzoq
   try {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    [0, 0.25, 0.5].forEach(t => {
-      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-      o.frequency.value = 880; o.connect(g); g.connect(audioCtx.destination);
-      g.gain.setValueAtTime(0.2, audioCtx.currentTime + t);
-      o.start(audioCtx.currentTime + t); o.stop(audioCtx.currentTime + t + 0.15);
-    });
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t0 = audioCtx.currentTime;
+    for (let r = 0; r < 3; r++) for (let i = 0; i < 3; i++) {
+      const t = t0 + r * 1.1 + i * 0.22, o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'square'; o.frequency.value = i === 2 ? 1320 : 990; o.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      o.start(t); o.stop(t + 0.2);
+    }
   } catch { /* audio mavjud emas */ }
-  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  if (navigator.vibrate) navigator.vibrate([600, 150, 600, 150, 600, 150, 900]);
 }
+// Birinchi bosishda audio "ochiladi" (brauzerlar ovozni faqat foydalanuvchi harakatidan keyin ruxsat beradi)
+function primeAudio() { try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch { /* */ } }
+document.addEventListener('pointerdown', primeAudio, { once: true });
 
 function startRest(sec) {
   rest = { end: Date.now() + sec * 1000, total: sec };
@@ -974,7 +981,7 @@ function restTick() {
   const left = Math.ceil((rest.end - Date.now()) / 1000);
   if (left <= 0) {
     stopRest(); beep(); toast('Dam olish tugadi — keyingi set!', '⏱️');
-    if (document.hidden) notify('Dam olish tugadi ⏱️', 'Keyingi setga tayyormisiz?');
+    if (document.hidden) notify('Dam olish tugadi ⏱️', 'Keyingi setga tayyormisiz?', true);
     return;
   }
   $('#restT').textContent = fmtTime(left);
@@ -1083,6 +1090,11 @@ const ACTIONS = {
     const h = $('#notifHelp'); if (h) h.textContent = shown ? 'Ruxsat berilgan ✓ — bildirishnoma yuborildi (ko\'rinmasa, telefon "Bezovta qilmang" rejimini tekshiring).' : 'Ruxsat bor, lekin bildirishnoma chiqmadi.';
   },
   'sync-login': () => window.Sync && Sync.login(),
+  'alarm-set': () => {
+    const v = (document.querySelector('#setForm [name=remindTime]') || {}).value || S.profile.remindTime || '18:00';
+    const [h, m] = v.split(':').map(Number);
+    location.href = `intent:#Intent;action=android.intent.action.SET_ALARM;i.android.intent.extra.alarm.HOUR=${h};i.android.intent.extra.alarm.MINUTES=${m};S.android.intent.extra.alarm.MESSAGE=GymTrack: mashg'ulot vaqti;B.android.intent.extra.alarm.SKIP_UI=false;end`;
+  },
   'tg-retry': () => window.Sync && Sync.tgLogin(),
   'tg-web': () => window.Sync && Sync.tgWebLogin(),
   'tg-cancel': () => window.Sync && Sync.tgCancel(),

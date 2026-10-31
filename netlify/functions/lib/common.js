@@ -23,7 +23,8 @@ async function gToken(s) {
   const j = await r.json(); if (!j.access_token) throw new Error('Google token olinmadi');
   return j.access_token;
 }
-const docUrl = (s, sid) => `https://firestore.googleapis.com/v1/projects/${s.project_id}/databases/(default)/documents/tglogin/${sid}`;
+const colUrl = (s, col) => `https://firestore.googleapis.com/v1/projects/${s.project_id}/databases/(default)/documents/${col}`;
+const docUrl = (s, sid) => `${colUrl(s, 'tglogin')}/${sid}`;
 const str = v => ({ stringValue: String(v) }), int = v => ({ integerValue: String(v) });
 
-module.exports = { crypto, b64u, eq, json, SID, sa, customToken, gToken, docUrl, str, int };
+module.exports = { crypto, b64u, eq, json, SID, sa, customToken, gToken, docUrl, colUrl, str, int };
