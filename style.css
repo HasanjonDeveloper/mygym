@@ -370,3 +370,18 @@ optgroup{font-style:normal}
 .cut-day.over>div:first-child b{color:#ff7a7a}
 .cutcard .btn.sm,.cutcard .block.sm{padding:10px}
 .cutdiet h3{margin-top:0}.cutsum{margin-bottom:6px}
+
+/* Yig'iladigan bo'limlar */
+details.fold{margin:6px 0 14px}
+details.fold>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;font-family:'Big Shoulders Display',sans-serif;font-size:21px;letter-spacing:.5px;text-transform:uppercase;padding:6px 2px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::after{content:"+";font-family:'Instrument Sans',sans-serif;font-size:22px;color:var(--mute);width:26px;height:26px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;line-height:1}
+details.fold[open]>summary::after{content:"\2212"}
+details.fold>summary small{text-transform:none;font-family:'Instrument Sans',sans-serif;font-size:12px;margin-left:8px;display:inline}
+details.card.fold{padding:10px 14px}
+details.card.fold[open]{padding-bottom:16px}
+details.card.fold>summary{font-size:19px}
+.exfold{margin:0 0 10px}
+.exfold>summary{cursor:pointer;color:var(--mute);font-size:13.5px;padding:6px 0;list-style:none}
+.exfold>summary::-webkit-details-marker{display:none}
+.exfold>summary::before{content:"\25B8  "}.exfold[open]>summary::before{content:"\25BE  "}

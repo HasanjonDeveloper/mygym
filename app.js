@@ -299,6 +299,11 @@ function renderHome() {
 }
 
 // ====================== TAB: MASHG'ULOT ======================
+// Yig'iladigan bo'limlar: ochiq/yopiq holat qayta chizilganda ham saqlanadi
+const FOLD = {};
+const foldAttr = k => `data-fold="${k}"${FOLD[k] ? ' open' : ''}`;
+document.addEventListener('toggle', e => { const k = e.target && e.target.dataset && e.target.dataset.fold; if (k) FOLD[k] = e.target.open; }, true);
+
 function renderTrain() {
   const cur = findProg(S.profile.program);
   const next = S.profile.dayIdx % cur.days.length;
@@ -313,7 +318,8 @@ function renderTrain() {
     <div class="list">${cur.days.map((d, i) => `<div class="card day ${i === next ? 'next' : ''}">
       <div class="dh"><div><b>${esc(d.name)}</b><small class="mute">${d.ex.length} mashq · ${d.ex.reduce((a, e) => a + e[1], 0)} set</small></div>
       ${i === next ? '<span class="pill">Navbatdagi</span>' : ''}</div>
-      <ol class="exl">${d.ex.map(e => `<li data-act="ex-info" data-ex="${e[0]}"><span>${esc(exById(e[0])?.name || e[0])}</span><em>${e[1]}×${e[2]}</em></li>`).join('')}</ol>
+      ${(() => { const ol = `<ol class="exl">${d.ex.map(e => `<li data-act="ex-info" data-ex="${e[0]}"><span>${esc(exById(e[0])?.name || e[0])}</span><em>${e[1]}×${e[2]}</em></li>`).join('')}</ol>`;
+        return i === next ? ol : `<details class="exfold" ${foldAttr('day' + i)}><summary>Mashqlar ro'yxati</summary>${ol}</details>`; })()}
       <button class="btn ${i === next ? '' : 'ghost'} block" data-act="start-day" data-idx="${i}">Boshlash</button></div>`).join('')}</div>
     <button class="btn ghost block" data-act="start-empty">+ Bo'sh mashg'ulot</button>
     <h3 class="sec">So'nggi mashg'ulotlar</h3>
@@ -595,7 +601,29 @@ function renderDiet() {
       <div class="grow">${bar('Oqsil', tot.p, g.p, 'g')}${bar('Uglevod', tot.c, g.c, 'g')}${bar('Yog\'', tot.f, g.f, 'g')}</div></div>
       <div class="water"><span>Suv</span><div class="glasses">${Array.from({ length: WATER_GOAL }, (_, i) => `<button class="${i < water ? 'on' : ''}" data-act="water-set" data-n="${i + 1}" aria-label="${i + 1}-stakan"></button>`).join('')}</div><small>${water * 250} ml</small></div></div>
 
-    <details class="card"><summary>Kunlik maqsadni hisoblash</summary>
+    <h3 class="sec">Bugungi ovqatlar</h3>
+    <div class="list">${meals.length ? meals.map(m => `<div class="item"><div><b>${esc(m.name)}</b><small>${Math.round(m.kcal)} kkal · O ${Math.round(m.p)} · U ${Math.round(m.c)} · Y ${Math.round(m.f)}</small></div>
+      <button class="x" data-act="del-meal" data-id="${m.id}" aria-label="O'chirish">✕</button></div>`).join('') : '<div class="empty">Bugun hali ovqat kiritilmagan</div>'}</div>
+    <h3 class="sec">Tez qo'shish</h3>
+    <form id="foodForm" class="card stack"><select name="food" id="foodSel">${[['🇺🇿 Milliy taomlar va mevalar', e => e[1].uz], ['Boshqa mahsulotlar', e => !e[1].uz]].map(([lbl, fn]) => `<optgroup label="${lbl}">${Object.entries(FOODS).filter(fn).map(([id, f]) => `<option value="${id}">${esc(f.n)}</option>`).join('')}</optgroup>`).join('')}</select>
+      <div class="row"><input name="g" id="foodG" type="number" inputmode="numeric" min="1" value="100" aria-label="Gramm"><span class="unit">gramm</span><button class="btn">Qo'shish</button></div>
+      <small class="mute" id="foodPrev"></small><small class="mute">Milliy taomlar qiymatlari taxminiy: retsept va porsiyaga qarab farq qiladi.</small></form>
+    <details class="card"><summary>Qo'lda kiritish</summary><form id="mealForm" class="grid2f">
+      <input class="full" name="name" placeholder="Ovqat nomi" required maxlength="60"><input name="kcal" type="number" min="0" placeholder="kkal" required>
+      <input name="p" type="number" min="0" placeholder="Oqsil g"><input name="c" type="number" min="0" placeholder="Uglevod g"><input name="f" type="number" min="0" placeholder="Yog' g">
+      <button class="btn full">Qo'shish</button></form></details>
+
+    <details class="fold" ${foldAttr('plan')}><summary>Ovqatlanish rejasi</summary>
+    <div class="seg">${Object.entries(MEAL_PLANS).map(([k, p]) => `<button class="${k === pg ? 'on' : ''}" data-act="plan-goal" data-k="${k}">${esc(p.name)}</button>`).join('')}</div>
+    <div class="seg small">${MEAL_PLANS[pg].variants.map((_, i) => `<button class="${i === S.profile.planVar % MEAL_PLANS[pg].variants.length ? 'on' : ''}" data-act="plan-var" data-i="${i}">Variant ${'AB'[i]}</button>`).join('')}</div>
+    <p class="mute small">Reja ${g.kcal} kkal maqsadingizga moslashtirildi: ${Math.round(planTot.k)} kkal · O ${Math.round(planTot.p)} · U ${Math.round(planTot.c)} · Y ${Math.round(planTot.f)}</p>
+    <div class="list">${plan.map((m, mi) => `<div class="card meal"><div class="dh"><div><b>${esc(m.name)}</b><small class="mute">${Math.round(m.t.k)} kkal · O ${Math.round(m.t.p)} · U ${Math.round(m.t.c)} · Y ${Math.round(m.t.f)}</small></div>
+      <button class="btn sm" data-act="plan-add" data-mi="${mi}">+ Qo'shish</button></div>
+      <ul class="foods">${m.rows.map(r => `<li><span>${esc(r.food.n)}</span><em>${r.g} g${r.food.piece ? ` (~${round1(r.g / r.food.piece)} dona)` : ''}</em></li>`).join('')}</ul></div>`).join('')}
+      <button class="btn ghost block" data-act="plan-add-all">Butun rejani bugunga qo'shish</button></div></details>
+    ${window.Budget ? Budget.html() : ''}
+
+    <details class="card fold" ${foldAttr('calc')}><summary>Kunlik maqsadni hisoblash</summary>
       <form id="calcForm" class="grid2f">
         <select name="sex"><option value="m">Erkak</option><option value="f">Ayol</option></select>
         <input name="age" type="number" inputmode="numeric" placeholder="Yosh" min="12" max="90" required>
@@ -610,31 +638,7 @@ function renderDiet() {
       <form id="goalForm" class="grid2f"><small class="full mute">Yoki qo'lda kiriting:</small>
         <input name="kcal" type="number" value="${g.kcal}" aria-label="Kaloriya"><input name="p" type="number" value="${g.p}" aria-label="Oqsil">
         <input name="c" type="number" value="${g.c}" aria-label="Uglevod"><input name="f" type="number" value="${g.f}" aria-label="Yog'">
-        <button class="btn ghost full">Saqlash</button></form></details>
-
-    <h3 class="sec">Ovqatlanish rejasi</h3>
-    <div class="seg">${Object.entries(MEAL_PLANS).map(([k, p]) => `<button class="${k === pg ? 'on' : ''}" data-act="plan-goal" data-k="${k}">${esc(p.name)}</button>`).join('')}</div>
-    <div class="seg small">${MEAL_PLANS[pg].variants.map((_, i) => `<button class="${i === S.profile.planVar % MEAL_PLANS[pg].variants.length ? 'on' : ''}" data-act="plan-var" data-i="${i}">Variant ${'AB'[i]}</button>`).join('')}</div>
-    <p class="mute small">Reja ${g.kcal} kkal maqsadingizga moslashtirildi: ${Math.round(planTot.k)} kkal · O ${Math.round(planTot.p)} · U ${Math.round(planTot.c)} · Y ${Math.round(planTot.f)}</p>
-    <div class="list">${plan.map((m, mi) => `<div class="card meal"><div class="dh"><div><b>${esc(m.name)}</b><small class="mute">${Math.round(m.t.k)} kkal · O ${Math.round(m.t.p)} · U ${Math.round(m.t.c)} · Y ${Math.round(m.t.f)}</small></div>
-      <button class="btn sm" data-act="plan-add" data-mi="${mi}">+ Qo'shish</button></div>
-      <ul class="foods">${m.rows.map(r => `<li><span>${esc(r.food.n)}</span><em>${r.g} g${r.food.piece ? ` (~${round1(r.g / r.food.piece)} dona)` : ''}</em></li>`).join('')}</ul></div>`).join('')}
-      <button class="btn ghost block" data-act="plan-add-all">Butun rejani bugunga qo'shish</button></div>
-
-    ${window.Budget ? Budget.html() : ''}
-
-    <h3 class="sec">Tez qo'shish</h3>
-    <form id="foodForm" class="card stack"><select name="food" id="foodSel">${[['🇺🇿 Milliy taomlar va mevalar', e => e[1].uz], ['Boshqa mahsulotlar', e => !e[1].uz]].map(([lbl, fn]) => `<optgroup label="${lbl}">${Object.entries(FOODS).filter(fn).map(([id, f]) => `<option value="${id}">${esc(f.n)}</option>`).join('')}</optgroup>`).join('')}</select>
-      <div class="row"><input name="g" id="foodG" type="number" inputmode="numeric" min="1" value="100" aria-label="Gramm"><span class="unit">gramm</span><button class="btn">Qo'shish</button></div>
-      <small class="mute" id="foodPrev"></small><small class="mute">Milliy taomlar qiymatlari taxminiy: retsept va porsiyaga qarab farq qiladi.</small></form>
-    <details class="card"><summary>Qo'lda kiritish</summary><form id="mealForm" class="grid2f">
-      <input class="full" name="name" placeholder="Ovqat nomi" required maxlength="60"><input name="kcal" type="number" min="0" placeholder="kkal" required>
-      <input name="p" type="number" min="0" placeholder="Oqsil g"><input name="c" type="number" min="0" placeholder="Uglevod g"><input name="f" type="number" min="0" placeholder="Yog' g">
-      <button class="btn full">Qo'shish</button></form></details>
-
-    <h3 class="sec">Bugungi ovqatlar</h3>
-    <div class="list">${meals.length ? meals.map(m => `<div class="item"><div><b>${esc(m.name)}</b><small>${Math.round(m.kcal)} kkal · O ${Math.round(m.p)} · U ${Math.round(m.c)} · Y ${Math.round(m.f)}</small></div>
-      <button class="x" data-act="del-meal" data-id="${m.id}" aria-label="O'chirish">✕</button></div>`).join('') : '<div class="empty">Bugun hali ovqat kiritilmagan</div>'}</div>`;
+        <button class="btn ghost full">Saqlash</button></form></details>`;
   updateFoodPreview();
 }
 
@@ -710,11 +714,11 @@ async function shrinkPhoto(file) {
 }
 
 function photoCard() {
-  return `<div class="card"><h3>Progress rasmlari <small>faqat shu qurilmada</small></h3>
+  return `<details class="card fold" ${foldAttr('photo')}><summary>Progress rasmlari <small>faqat shu qurilmada</small></summary>
     <div class="row"><select id="photoKind" aria-label="Rasm turi">${PHOTO_KINDS.map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select>
       <label class="btn ghost filebtn grow center">📷 Rasm qo'shish<input type="file" id="photoFile" accept="image/*" hidden></label></div>
     <div id="photoBox"><div class="empty">Yuklanmoqda…</div></div>
-    <p class="mute small">Taqqoslash uchun ikkita rasmni belgilang. Rasmlar bulutga yuborilmaydi va eksportga kirmaydi; brauzer ma'lumotlari tozalansa yo'qoladi.</p></div>`;
+    <p class="mute small">Taqqoslash uchun ikkita rasmni belgilang. Rasmlar bulutga yuborilmaydi va eksportga kirmaydi; brauzer ma'lumotlari tozalansa yo'qoladi.</p></details>`;
 }
 
 async function loadPhotos() {
@@ -773,13 +777,13 @@ function measCard() {
     const d = l && p ? round1(l[k] - p[k]) : null;
     return `<div><b>${l ? l[k] : '–'}</b><small>${n}${d ? ` <span class="${d > 0 ? 'up' : 'down'}t">${d > 0 ? '+' : ''}${d}</span>` : ''}</small></div>`;
   }).join('');
-  return `<div class="card"><h3>Tana o'lchamlari <small>sm</small></h3>
+  return `<details class="card fold" ${foldAttr('meas')}><summary>Tana o'lchamlari <small>sm</small></summary>
     <div class="measgrid">${cells}</div>
     <form id="measForm" class="grid2f">${MEAS.map(([k, n]) => `<input name="${k}" type="number" inputmode="decimal" step="0.1" min="5" max="250" placeholder="${n} (sm)" aria-label="${n}">`).join('')}
       <button class="btn full">Bugungi o'lchovni saqlash</button></form>
     ${rows.length ? `<select id="measSel" aria-label="O'lchov turi">${MEAS.map(([k, n]) => `<option value="${k}" ${k === measKey ? 'selected' : ''}>${n}</option>`).join('')}</select>
       <div class="chart">${lineChart(pts, 'sm')}</div>
-      <button class="link danger" data-act="meas-del">Oxirgi yozuvni o'chirish</button>` : ''}</div>`;
+      <button class="link danger" data-act="meas-del">Oxirgi yozuvni o'chirish</button>` : ''}</details>`;
 }
 
 function renderProg() {
@@ -816,11 +820,11 @@ function renderProg() {
 
   $('#tab-prog').innerHTML = `
     ${window.Cut ? Cut.progCard() : ''}
-    <div class="stats4 fade"><div><b>${S.workouts.length}</b><small>Mashg'ulot</small></div><div><b>${st.streak}</b><small>Seriya</small></div>
-      <div><b>${(st.volume / 1000).toFixed(1)}t</b><small>Hajm</small></div><div><b>${st.prCount}</b><small>Rekord</small></div></div>
     <div class="card"><h3>Tana vazni ${bwDelta !== null ? `<span class="delta ${bwDelta > 0 ? 'up' : 'down'}">${bwDelta > 0 ? '+' : ''}${bwDelta} kg</span>` : ''}</h3>
       <form id="bwForm" class="row"><input name="kg" type="number" inputmode="decimal" step="0.1" min="20" max="400" placeholder="Bugungi vazn (kg)" required><button class="btn">Saqlash</button></form>
       <div class="chart">${lineChart(bw.map(b => ({ y: b.kg, label: shortDate(b.date) })), 'kg')}</div></div>
+    <div class="stats4 fade"><div><b>${S.workouts.length}</b><small>Mashg'ulot</small></div><div><b>${st.streak}</b><small>Seriya</small></div>
+      <div><b>${(st.volume / 1000).toFixed(1)}t</b><small>Hajm</small></div><div><b>${st.prCount}</b><small>Rekord</small></div></div>
     ${measCard()}
     ${photoCard()}
     <div class="card"><h3>Mashq progressi</h3>${exHtml}</div>
