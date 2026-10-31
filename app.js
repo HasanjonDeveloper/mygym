@@ -28,6 +28,7 @@ const store = {
 const DEFAULTS = {
   profile: {
     name: '', weeklyGoal: 4, program: 'ppl', dayIdx: 0, planGoal: 'massa', planVar: 0, theme: 'dark', onboarded: false,
+    voice: false, voiceLang: 'auto',                          // ovozli yordamchi
     pPerKg: 2, fatPct: 25,                                   // dieta: oqsil g/kg va yog' % (kaloriyadan)
     remindOn: false, remindTime: '18:00', remindDays: [1, 3, 5], remindLast: '',   // eslatma
   },
@@ -355,6 +356,7 @@ function renderWk() {
   el.innerHTML = `
     <div class="wk-head"><button class="ico" data-act="wk-min" aria-label="Kichraytirish">⌄</button>
       <div class="grow"><b>${esc(a.name)}</b><small><span id="wkTime"></span> · <span id="wkCount">${done}/${total} set</span></small></div>
+      ${window.Voice && Voice.supported ? `<button class="ico ${S.profile.voice ? 'on' : ''}" data-act="voice-toggle" aria-label="Ovozli yordamchi" aria-pressed="${!!S.profile.voice}">${S.profile.voice ? '🔊' : '🔈'}</button>` : ''}
       <button class="btn sm" data-act="wk-finish">Tugatish</button></div>
     <div class="bar thin"><div id="wkBar" style="width:${total ? (done / total) * 100 : 0}%"></div></div>
     <div id="wkScroll" class="wk-scroll">
@@ -837,6 +839,11 @@ function settingsSheet() {
     <label>Ismingiz<input name="name" value="${esc(S.profile.name)}" maxlength="30" placeholder="Ism"></label>
     <label>Haftalik maqsad (mashg'ulot kunlari)<select name="goal">${[2, 3, 4, 5, 6].map(n => `<option ${n === S.profile.weeklyGoal ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
     <label>Mavzu<select name="theme">${[['dark', 'Qorong\'i'], ['light', 'Yorug\''], ['auto', 'Qurilmaga mos']].map(([v, n]) => `<option value="${v}" ${S.profile.theme === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+    ${window.Voice && Voice.supported ? `<h4>Ovozli yordamchi</h4>
+    <label class="check"><input type="checkbox" data-voice-on ${S.profile.voice ? 'checked' : ''}> Mashg'ulotda ovoz bilan aytib turish</label>
+    <label>Til<select data-voice-lang>${[['auto', 'Avto (o\'zbek, bo\'lmasa rus yoki ingliz)'], ['uz', 'O\'zbekcha'], ['ru', 'Ruscha'], ['en', 'Inglizcha']].map(([v, n]) => `<option value="${v}" ${(S.profile.voiceLang || 'auto') === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+    <button type="button" class="btn ghost" data-act="voice-test">Ovozni sinash</button>
+    <p class="mute small">Set bajarilganda, dam olish tugaganda va keyingi mashqda ovoz bilan xabar beradi. O'zbek ovozi telefonda bo'lmasa, rus yoki ingliz ovozi ishlatiladi.</p>` : ''}
     <h4>Mashg'ulot eslatmasi</h4>
     <label class="check"><input type="checkbox" name="remindOn" ${S.profile.remindOn ? 'checked' : ''}> Eslatmani yoqish</label>
     <label>Vaqt<input type="time" name="remindTime" value="${esc(S.profile.remindTime)}"></label>
@@ -973,20 +980,20 @@ function onboardSheet() {
 // ====================== dam olish taymeri ======================
 let rest = { end: 0, total: 0 }, restId = null, audioCtx = null;
 
-function beep() {
+function beep(rounds = 3) {
   // Baland va uzoq signal: 3 marta 3 ta qisqa "bip" (budilnik ohangi), tebranish ham uzoq
   try {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const t0 = audioCtx.currentTime;
-    for (let r = 0; r < 3; r++) for (let i = 0; i < 3; i++) {
+    for (let r = 0; r < rounds; r++) for (let i = 0; i < 3; i++) {
       const t = t0 + r * 1.1 + i * 0.22, o = audioCtx.createOscillator(), g = audioCtx.createGain();
       o.type = 'square'; o.frequency.value = i === 2 ? 1320 : 990; o.connect(g); g.connect(audioCtx.destination);
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
       o.start(t); o.stop(t + 0.2);
     }
   } catch { /* audio mavjud emas */ }
-  if (navigator.vibrate) navigator.vibrate([600, 150, 600, 150, 600, 150, 900]);
+  if (navigator.vibrate) navigator.vibrate(rounds > 1 ? [600, 150, 600, 150, 600, 150, 900] : [500, 120, 500]);
 }
 // Birinchi bosishda audio "ochiladi" (brauzerlar ovozni faqat foydalanuvchi harakatidan keyin ruxsat beradi)
 function primeAudio() { try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch { /* */ } }
@@ -1000,8 +1007,9 @@ function startRest(sec) {
 }
 function restTick() {
   const left = Math.ceil((rest.end - Date.now()) / 1000);
+  if (window.Voice) Voice.tick(left);
   if (left <= 0) {
-    stopRest(); beep(); toast('Dam olish tugadi — keyingi set!', '⏱️');
+    stopRest(); const vo = window.Voice && Voice.on(); beep(vo ? 1 : 3); if (vo) Voice.restEnd(); toast('Dam olish tugadi — keyingi set!', '⏱️');
     if (document.hidden) notify('Dam olish tugadi ⏱️', 'Keyingi setga tayyormisiz?', true);
     return;
   }
