@@ -879,7 +879,9 @@ function checkReminder() {
   if (S.workouts.some(w => w.date === today())) return;
   p.remindLast = today(); save('profile');
   const { day } = programDay();
-  notify('Mashg\'ulot vaqti! 💪', `Bugun: ${day.name}`);
+  beep();   // taymerdagidek baland signal va tebranish
+  if (!document.hidden) toast(`Mashg'ulot vaqti! Bugun: ${day.name}`, '💪');
+  notify('Mashg\'ulot vaqti! 💪', `Bugun: ${day.name}`, true);
 }
 setInterval(checkReminder, 60000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkReminder(); });
@@ -1094,6 +1096,7 @@ const ACTIONS = {
     }
     const ok = await askNotifPermission();
     if (!ok) { const st = notifState(); toast(notifHelp(st), '⚠️'); const h = $('#notifHelp'); if (h) h.textContent = notifHelp(st); return; }
+    beep();
     const shown = await notify('GymTrack', 'Eslatmalar ishlayapti 💪');
     const h = $('#notifHelp'); if (h) h.textContent = shown ? 'Ruxsat berilgan ✓ — bildirishnoma yuborildi (ko\'rinmasa, telefon "Bezovta qilmang" rejimini tekshiring).' : 'Ruxsat bor, lekin bildirishnoma chiqmadi.';
   },
