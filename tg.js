@@ -44,6 +44,16 @@
     mo.observe(sheet, { attributes: true, attributeFilter: ['class'] });
     mo.observe(wk, { attributes: true, attributeFilter: ['class'] });
 
+    // Saytdan "Telegram orqali kirish" bosilgan bo'lsa: startapp parametri kirish kaliti bo'ladi
+    const sp = W.initDataUnsafe && W.initDataUnsafe.start_param;
+    if (sp && /^[0-9a-f]{32}$/.test(sp)) setTimeout(async () => {
+      if (!await ask('Saytga shu Telegram hisobi bilan kirishni tasdiqlaysizmi? Faqat o\'zingiz saytda "Telegram orqali kirish" ni bosgan bo\'lsangiz tasdiqlang.', 'Tasdiqlash')) return;
+      try {
+        const r = await fetch('/.netlify/functions/tg-auth', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'approve', sid: sp, initData: W.initData }) });
+        toast(r.ok ? 'Tasdiqlandi. Saytga qayting' : 'Tasdiqlanmadi', r.ok ? '✅' : '⚠️');
+      } catch { toast('Tarmoq xatosi', '⚠️'); }
+    }, 600);
+
     // Tebranish (haptic): set belgilanganda va mashg'ulot tugaganda
     const hap = (kind, v) => safe(() => W.HapticFeedback[kind](v));
     const setDone = ACTIONS['set-done'];

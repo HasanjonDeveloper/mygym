@@ -71,17 +71,29 @@ const Sync = (() => {
     if (!auth || !d) return;
     try { await tgExchange({ initData: d }); } catch (e) { setStatus('', friendly(e)); }
   }
-  let botName = null;
-  async function mountWidget() {
-    const box = document.getElementById('tgWidget'); if (!box || window.IN_TG || user) return;
-    if (!botName) { try { botName = (await (await fetch('/.netlify/functions/tg-auth')).json()).bot || ''; } catch { botName = ''; } }
-    if (!botName || !document.getElementById('tgWidget')) return;
-    if (box.childElementCount) return;
-    window.__tgAuth = async w => { if (!ready) await init(); try { await tgExchange({ widget: w }); } catch (e) { setStatus('', friendly(e)); } };
-    const s = document.createElement('script'); s.async = true; s.src = 'https://telegram.org/js/telegram-widget.js?22';
-    s.dataset.telegramLogin = botName; s.dataset.size = 'large'; s.dataset.requestAccess = 'write'; s.dataset.onauth = '__tgAuth(user)';
-    document.getElementById('tgWidget').appendChild(s);
+  // ---- Brauzerdan Telegram orqali kirish: bot ichida tasdiqlanadi (BotFather domeni kerak emas) ----
+  const FN = '/.netlify/functions/tg-auth';
+  let info = null, pend = null, link = '';
+  async function loadInfo() { if (!info) { try { info = await (await fetch(FN)).json(); } catch { info = {}; } } return info; }
+  function mountWidget() { if (!window.IN_TG && !info) loadInfo(); }
+  async function tgWebLogin() {
+    if (!ready) await init(); if (!auth) return;
+    const i = await loadInfo(); if (!i.bot) { setStatus('', 'Bot sozlanmagan (BOT_USERNAME)'); return; }
+    const sid = [...crypto.getRandomValues(new Uint8Array(16))].map(x => x.toString(16).padStart(2, '0')).join('');
+    link = `https://t.me/${i.bot}${i.app ? '/' + i.app : ''}?startapp=${sid}`;
+    pend = sid; setStatus('Telegramda ochilgan oynada tasdiqlang…'); window.open(link, '_blank');
+    for (let n = 0; n < 150 && pend === sid && !user; n++) {
+      await new Promise(r => setTimeout(r, 2000)); if (pend !== sid) return;
+      try {
+        const r = await fetch(FN, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'poll', sid }) });
+        const j = await r.json();
+        if (j.token) { pend = null; store.set('tgname', j.name || ''); await auth.signInWithCustomToken(j.token); return; }
+        if (!r.ok) { pend = null; setStatus('', j.error || 'Xato'); return; }
+      } catch { /* tarmoq: yana urinamiz */ }
+    }
+    if (pend === sid) { pend = null; setStatus('', 'Vaqt tugadi. Qayta urinib ko\'ring.'); }
   }
+  function tgCancel() { pend = null; setStatus(''); }
 
   async function login() {
     if (!ready) await init();
@@ -166,7 +178,7 @@ const Sync = (() => {
     }
     if (!user) {
       return `<h4>Bulutli sinxronlash</h4><p class="mute small">Loyiha: <b>${esc(c.projectId)}</b></p>${e}
-        <div class="row wrap"><button class="btn" data-act="sync-login">Google bilan kirish</button></div><div id="tgWidget" style="margin-top:12px"></div>`;
+        <div class="row wrap"><button class="btn" data-act="sync-login">Google bilan kirish</button><button class="btn ghost" data-act="tg-web">Telegram orqali kirish</button></div>${pend ? `<p class="mute small">Telegram ochilmadimi? <a href="${esc(link)}" target="_blank" rel="noopener">Shu havolani oching</a> · <a href="#" data-act="tg-cancel">Bekor qilish</a></p>` : ''}`;
     }
     return `<h4>Bulutli sinxronlash</h4>
       <p class="small">Kirgan: <b>${esc(user.email || user.displayName || store.get('tgname', '') || 'Telegram')}</b></p><p class="mute small">${esc(status || 'Tayyor')}</p>${e}
@@ -176,7 +188,7 @@ const Sync = (() => {
   window.addEventListener('online', () => { if (user) syncNow(true); else init(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && user) syncNow(true); });
 
-  return { init, html, login, tgLogin, mount: mountWidget, logout, syncNow, touch, saveCfg, clearCfg, get user() { return user; } };
+  return { init, html, login, tgLogin, tgWebLogin, tgCancel, mount: mountWidget, logout, syncNow, touch, saveCfg, clearCfg, get user() { return user; } };
 })();
 
 window.Sync = Sync;

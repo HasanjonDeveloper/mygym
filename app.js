@@ -1084,6 +1084,8 @@ const ACTIONS = {
   },
   'sync-login': () => window.Sync && Sync.login(),
   'tg-retry': () => window.Sync && Sync.tgLogin(),
+  'tg-web': () => window.Sync && Sync.tgWebLogin(),
+  'tg-cancel': () => window.Sync && Sync.tgCancel(),
   'sync-now': () => window.Sync && Sync.syncNow(false),
   'sync-logout': () => window.Sync && Sync.logout(),
   'sync-clear': async () => { if (window.Sync && await ask('Firebase sozlamasi o\'chirilsinmi? (Ma\'lumotlar qurilmada qoladi)', 'O\'chirish')) Sync.clearCfg(); },
